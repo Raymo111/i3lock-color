@@ -1209,7 +1209,7 @@ int main(int argc, char *argv[]) {
                     //read in to time_x_expr and time_y_expr
                     if (strlen(optarg) > 31) {
                         // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                        errx(1, "date position string can be at most 31 characters\n");
+                        errx(1, "time position string can be at most 31 characters\n");
                     }
                     char* arg = optarg;
                     if (sscanf(arg, "%30[^:]:%30[^:]", time_x_expr, time_y_expr) != 2) {
@@ -1228,7 +1228,6 @@ int main(int argc, char *argv[]) {
                     }
                 }
                 else if (strcmp(longopts[optind].name, "refresh-rate") == 0) {
-                    //read in to date_x_expr and date_y_expr
                     char* arg = optarg;
                     refresh_rate = strtof(arg, NULL);
                     if (refresh_rate < 1.0) {
@@ -1250,7 +1249,7 @@ int main(int argc, char *argv[]) {
 
                     if (sscanf(arg, "%lf", &text_size) != 1)
                         errx(1, "textsize must be a number\n");
-                    if (time_size < 1) {
+                    if (text_size < 1) {
                         fprintf(stderr, "textsize must be a positive integer; ignoring...\n");
                         text_size = 28.0;
                     }
@@ -1272,7 +1271,7 @@ int main(int argc, char *argv[]) {
                         errx(1, "radius must be a number\n");
                     if (circle_radius < 1) {
                         fprintf(stderr, "radius must be a positive integer; ignoring...\n");
-                        text_size = 90.0;
+                        circle_radius = 90.0;
                     }
                 }
                 break;
