@@ -278,10 +278,10 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
                           (strtol(strgroupsc[1], NULL, 16)),
                           (strtol(strgroupsc[2], NULL, 16)),
                           (strtol(strgroupsc[3], NULL, 16))};
-    char strgroupsd[4][3] = {{timecolor[0], timecolor[1], '\0'},
-                             {timecolor[2], timecolor[3], '\0'},
-                             {timecolor[4], timecolor[5], '\0'},
-                             {timecolor[6], timecolor[7], '\0'}};
+    char strgroupsd[4][3] = {{datecolor[0], datecolor[1], '\0'},
+                             {datecolor[2], datecolor[3], '\0'},
+                             {datecolor[4], datecolor[5], '\0'},
+                             {datecolor[6], datecolor[7], '\0'}};
     uint32_t date16[4] = {(strtol(strgroupsd[0], NULL, 16)),
                           (strtol(strgroupsd[1], NULL, 16)),
                           (strtol(strgroupsd[2], NULL, 16)),
