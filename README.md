@@ -62,8 +62,10 @@ Many little improvements have been made to i3lock over time:
 
 - i3lock uses PAM and therefore is compatible with LDAP etc.
   On OpenBSD i3lock uses the bsd\_auth(3) framework.
+## Installation 
+In order to install this re-patched version you'll need to have the following requirements: 
 
-Requirements
+### Requirements
 ------------
 - pkg-config
 - libxcb
@@ -79,10 +81,18 @@ Requirements
 - libxkbcommon >= 0.5.0
 - libxkbcommon-x11 >= 0.5.0
 
-##### Ubuntu
+##### Debian/Ubuntu 
 
     sudo apt-get install pkg-config libxcb1 libpam-dev libcairo-dev libxcb-composite0 libxcb-composite0-dev libxcb-xinerama0-dev libev-dev libx11-dev libx11-xcb-dev libxkbcommon0 libxkbcommon-x11-0 libxcb-dpms0-dev libxcb-image0-dev libxcb-util0-dev libxcb-xkb-dev libxkbcommon-x11-dev libxkbcommon-dev
-    
+ 
+ then open a terminal and clone the github repo like this :
+ ```sh 
+ user@machine:/tmp$ git clone https://github.com/chrjguill/i3lock-color
+ user@machine:/tmp$ cd i3lock-color/
+ user@machine:/i3lock-color$make  
+ user@machine:/i3lock-color$sudo make install 
+ ```
+ Now test the i3lock-color options
 ##### Aur Package
 https://aur.archlinux.org/packages/i3lock-color-git
 
