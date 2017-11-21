@@ -84,7 +84,7 @@ bool show_clock = false;
 bool show_indicator = false;
 float refresh_rate = 1.0;
 
-/* there's some issues with compositing - upstream removed support for this, but we'll allow people to supply an arg to enable it */ 
+/* there's some issues with compositing - upstream removed support for this, but we'll allow people to supply an arg to enable it */
 bool composite = false;
 /* time formatter strings for date/time
     I picked 32-length char arrays because some people might want really funky time formatters.
@@ -94,6 +94,7 @@ char time_format[32] = "%H:%M:%S\0";
 char date_format[32] = "%A, %m %Y\0";
 char time_font[32] = "sans-serif\0";
 char date_font[32] = "sans-serif\0";
+char status_font[32] = "sans-serif\0";
 char ind_x_expr[32] = "x + (w / 2)\0";
 char ind_y_expr[32] = "y + (h / 2)\0";
 char time_x_expr[32] = "ix - (cw / 2)\0";
@@ -923,14 +924,14 @@ int main(int argc, char *argv[]) {
         {"ringcolor", required_argument, NULL, 0},        // --r-c
         {"linecolor", required_argument, NULL, 0},        // --l-c
         {"textcolor", required_argument, NULL, 0},        // --t-c
-        {"timecolor", required_argument, NULL, 0},       
-        {"datecolor", required_argument, NULL, 0},       
+        {"timecolor", required_argument, NULL, 0},
+        {"datecolor", required_argument, NULL, 0},
         {"keyhlcolor", required_argument, NULL, 0},       // --k-c
         {"bshlcolor", required_argument, NULL, 0},        // --b-c
         {"separatorcolor", required_argument, NULL, 0},
         {"line-uses-ring", no_argument, NULL, 'r'},
         {"line-uses-inside", no_argument, NULL, 's'},
-        /* s for in_s_ide; ideally I'd use -I but that's used for timeout, which should use -T, but compatibility argh 
+        /* s for in_s_ide; ideally I'd use -I but that's used for timeout, which should use -T, but compatibility argh
          * note: `I` has been deprecated for a while, so I might just remove that and reshuffle that? */
         {"screen", required_argument, NULL, 'S'},
         {"blur", required_argument, NULL, 'B'},
@@ -938,11 +939,12 @@ int main(int argc, char *argv[]) {
         {"indicator", no_argument, NULL, 0},
         {"refresh-rate", required_argument, NULL, 0},
         {"composite", no_argument, NULL, 0},
-        
+
         {"timestr", required_argument, NULL, 0},
         {"datestr", required_argument, NULL, 0},
         {"timefont", required_argument, NULL, 0},
         {"datefont", required_argument, NULL, 0},
+        {"statusfont", required_argument, NULL, 0},
         {"timesize", required_argument, NULL, 0},
         {"datesize", required_argument, NULL, 0},
         {"timepos", required_argument, NULL, 0},
@@ -1200,6 +1202,13 @@ int main(int argc, char *argv[]) {
                         errx(1, "date font string can be at most 31 characters\n");
                     }
                     strcpy(date_font,optarg);
+                }
+                else if (strcmp(longopts[longoptind].name, "statusfont") == 0) {
+                    //read in to status_font
+                    if (strlen(optarg) > 31) {
+                        errx(1, "status font string can be at most 31 characters\n");
+                    }
+                    strcpy(status_font,optarg);
                 }
                 else if (strcmp(longopts[longoptind].name, "timesize") == 0) {
                     char *arg = optarg;

@@ -40,7 +40,7 @@ Many little improvements have been made to i3lock over time:
 		    - **NOTE**: This can potentially allow sensitive information to display over the screen locker, so take care when you use this option.
      - `-B=sigma, --blur` -- enables Gaussian blur. Sigma is the blur radius.
 	      - Note: You can still composite images over the blur (but still under the indicator) with -i.
-				- Eventually there might be an `imagepos` arg, similar to `time` and `datepos`. 
+				- Eventually there might be an `imagepos` arg, similar to `time` and `datepos`.
      - `--indpos="x+(w/2):y+(h/2)"` -- position of the unlock indicator. Expressions using the variables x (current screen's x value), y (current screen's y value), w (screen width), h (screen height), and r (indicator radius) can be used.
      - `--timestr="%H:%M:%S"` -- allows custom overriding of the time format string. Accepts `strftime` formatting. Default is `"%H:%M:%S"`.
      - `--timepos="ix:iy-20"` -- position of the time. All the variables in `indpos` can be used here, as well as the additional values ix (indicator x position), iy (indicator y position), cw (clock width), and ch (clock height).
@@ -52,12 +52,13 @@ Many little improvements have been made to i3lock over time:
      - `--datecolor=rrggbbaa` -- color of the date string
      - `--datefont="sans-serif"` -- font used for the date display
      - `--datesize=14` -- font size for the date display
-		 - `--veriftext="verifying…"` -- text to be shown while verifying
-		 - `--wrongtext="wrong!"` -- text to be shown upon an incorrect password being entered
-		 - `--textsize=28` -- font size for the status text
-		 - `--modsize=14` -- font size for the modifier keys listing
-		 - `--radius=90` -- the radius of the circle indicator
-		 - `--ring-width=7` -- the width of the indicator ring
+     - `--veriftext="verifying…"` -- text to be shown while verifying
+     - `--wrongtext="wrong!"` -- text to be shown upon an incorrect password being entered
+     - `--statusfont="sans-serif"` -- font used for the status text
+     - `--textsize=28` -- font size for the status text
+     - `--modsize=14` -- font size for the modifier keys listing
+     - `--radius=90` -- the radius of the circle indicator
+     - `--ring-width=7` -- the width of the indicator ring
 
 - You can specify whether i3lock should bell upon a wrong password.
 
@@ -93,7 +94,7 @@ If you don't understand what makefiles are and how they work, start reading [her
 ##### Ubuntu
 
     sudo apt-get install pkg-config libxcb1 libpam-dev libcairo-dev libxcb-composite0 libxcb-composite0-dev libxcb-xinerama0-dev libev-dev libx11-dev libx11-xcb-dev libxkbcommon0 libxkbcommon-x11-0 libxcb-dpms0-dev libxcb-image0-dev libxcb-util0-dev libxcb-xkb-dev libxkbcommon-x11-dev libxkbcommon-dev
-    
+
 ##### Aur Package
 Stable:
 https://aur.archlinux.org/packages/i3lock-color/
