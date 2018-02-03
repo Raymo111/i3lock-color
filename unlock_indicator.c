@@ -6,6 +6,8 @@
  * See LICENSE for licensing information
  *
  */
+#include "unlock_indicator.h"
+
 #include <cairo.h>
 #include <cairo/cairo-xcb.h>
 #include <ev.h>
@@ -14,13 +16,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <xcb/xcb.h>
 
 #include "fonts.h"
 #include "i3lock.h"
 #include "randr.h"
 #include "tinyexpr.h"
-#include "unlock_indicator.h"
 #include "xcb.h"
 
 /* clock stuff */
@@ -42,7 +42,7 @@ extern bool debug_mode;
 
 /* The current position in the input buffer. Useful to determine if any
  * characters of the password have already been entered or not. */
-int input_position;
+extern int input_position;
 
 /* The lock window. */
 extern xcb_window_t win;
@@ -202,10 +202,10 @@ static cairo_font_face_t *font_faces[5] = {
  * Pro 13" Retina screen, the scaling factor is 227/96 = 2.36.
  *
  */
-static double scaling_factor(void) {
-    const int dpi = (double)screen->height_in_pixels * 25.4 /
-                    (double)screen->height_in_millimeters;
-    return (dpi / 96.0);
+static double calculate_scaling_factor(void) {
+    const double dpi = (double)screen->height_in_pixels * 25.4 /
+                       (double)screen->height_in_millimeters;
+    return dpi / 96.0;
 }
 
 static cairo_font_face_t *get_font_face(int which) {
@@ -418,7 +418,6 @@ static void draw_bar(cairo_t *ctx, double x, double y, double bar_offset) {
 static void draw_indic(cairo_t *ctx, double ind_x, double ind_y) {
     if (unlock_indicator &&
         (unlock_state >= STATE_KEY_PRESSED || auth_state > STATE_AUTH_IDLE || show_indicator)) {
-        cairo_scale(ctx, scaling_factor(), scaling_factor());
         /* Draw a (centered) circle with transparent background. */
         cairo_set_line_width(ctx, RING_WIDTH);
         cairo_arc(ctx, ind_x, ind_y, BUTTON_RADIUS, 0, 2 * M_PI);
@@ -596,16 +595,25 @@ void init_colors_once(void) {
     colorgen_rgb(&tmp_rgb, color, &rgb16);
 }
 
+te_expr *compile_expression(const char *const from, const char *expression, const te_variable *variables, int var_count);
+te_expr *compile_expression(const char *const from, const char *expression, const te_variable *variables, int var_count) {
+    int te_err = 0;
+    te_expr *expr = te_compile(expression, variables, var_count, &te_err);
+    if (te_err) {
+        fprintf(stderr, "Failed to reason about '%s' given by '%s'\n", expression, from);
+        exit(1);
+    }
+    return expr;
+}
+
 /*
  * Draws global image with fill color onto a pixmap with the given
  * resolution and returns it.
  *
  */
 xcb_pixmap_t draw_image(uint32_t *resolution) {
+    const double scaling_factor = calculate_scaling_factor();
     xcb_pixmap_t bg_pixmap = XCB_NONE;
-    int button_diameter_physical = ceil(scaling_factor() * BUTTON_DIAMETER);
-    DEBUG("scaling_factor is %.f, physical diameter is %d px\n",
-          scaling_factor(), button_diameter_physical);
 
     if (!vistype)
         vistype = get_root_visual_type(screen);
@@ -617,6 +625,7 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
      */
     cairo_surface_t *output = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, resolution[0], resolution[1]);
     cairo_t *ctx = cairo_create(output);
+    cairo_scale(ctx, scaling_factor, scaling_factor);
 
     //    cairo_set_font_face(ctx, get_font_face(0));
 
@@ -784,87 +793,74 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
     }
 
     // initialize positioning vars
-    double ix, iy;
-    double x, y;
-    double screen_x, screen_y;
-    double w, h;
-    double tx = 0;
-    double ty = 0;
-    double dx = 0;
-    double dy = 0;
+    double screen_x = 0, screen_y = 0,
+           width = 0, height = 0;
 
-    double radius = BUTTON_RADIUS;
+    double mod_x = 0, mod_y = 0,
+           date_x = 0, date_y = 0,
+           bar_x = 0, bar_y = 0,
+           layout_x = 0, layout_y = 0,
+           status_x = 0, status_y = 0,
+           time_x = 0, time_y = 0,
+           indicator_x = 0, indicator_y = 0;
+
+    double radius = (circle_radius + ring_width);
     double bar_offset = 0;
+    int button_diameter_physical = ceil(scaling_factor * BUTTON_DIAMETER);
+    DEBUG("scaling_factor is %.f, physical diameter is %d px\n",
+          scaling_factor, button_diameter_physical);
 
-    int te_x_err;
-    int te_y_err;
     // variable mapping for evaluating the clock position expression
+    const unsigned int vars_size = 11;
     te_variable vars[] =
-        {{"w", &w},
-         {"h", &h},
+        {{"w", &width},
+         {"h", &height},
          {"x", &screen_x},
          {"y", &screen_y},
-         {"ix", &ix},
-         {"iy", &iy},
-         {"tx", &tx},
-         {"ty", &ty},
-         {"dx", &dx},
-         {"dy", &dy},
+         {"ix", &indicator_x},
+         {"iy", &indicator_y},
+         {"tx", &time_x},
+         {"ty", &time_y},
+         {"dx", &date_x},
+         {"dy", &date_y},
          {"r", &radius}};
-#define NUM_VARS 11
 
-    te_expr *te_ind_x_expr = te_compile(ind_x_expr, vars, NUM_VARS, &te_x_err);
-    te_expr *te_ind_y_expr = te_compile(ind_y_expr, vars, NUM_VARS, &te_y_err);
-    te_expr *te_time_x_expr = te_compile(time_x_expr, vars, NUM_VARS, &te_x_err);
-    te_expr *te_time_y_expr = te_compile(time_y_expr, vars, NUM_VARS, &te_y_err);
-    te_expr *te_date_x_expr = te_compile(date_x_expr, vars, NUM_VARS, &te_x_err);
-    te_expr *te_date_y_expr = te_compile(date_y_expr, vars, NUM_VARS, &te_y_err);
-    te_expr *te_layout_x_expr = te_compile(layout_x_expr, vars, NUM_VARS, &te_x_err);
-    te_expr *te_layout_y_expr = te_compile(layout_y_expr, vars, NUM_VARS, &te_y_err);
-    te_expr *te_status_x_expr = te_compile(status_x_expr, vars, NUM_VARS, &te_x_err);
-    te_expr *te_status_y_expr = te_compile(status_y_expr, vars, NUM_VARS, &te_y_err);
-    te_expr *te_modif_x_expr = te_compile(modif_x_expr, vars, NUM_VARS, &te_x_err);
-    te_expr *te_modif_y_expr = te_compile(modif_y_expr, vars, NUM_VARS, &te_y_err);
-    te_expr *te_bar_expr = te_compile(bar_expr, vars, NUM_VARS, &te_x_err);
-
-    double time_x = 0, time_y = 0,
-           date_x = 0, date_y = 0,
-           mod_x = 0, mod_y = 0,
-           layout_x = 0, layout_y = 0,
-           status_x = 0, status_y = 0;
+    te_expr *te_ind_x_expr = compile_expression("--indpos", ind_x_expr, vars, vars_size);
+    te_expr *te_ind_y_expr = compile_expression("--indpos", ind_y_expr, vars, vars_size);
+    te_expr *te_time_x_expr = compile_expression("--timepos", time_x_expr, vars, vars_size);
+    te_expr *te_time_y_expr = compile_expression("--timepos", time_y_expr, vars, vars_size);
+    te_expr *te_date_x_expr = compile_expression("--datepos", date_x_expr, vars, vars_size);
+    te_expr *te_date_y_expr = compile_expression("--datepos", date_y_expr, vars, vars_size);
+    te_expr *te_layout_x_expr = compile_expression("--layoutpos", layout_x_expr, vars, vars_size);
+    te_expr *te_layout_y_expr = compile_expression("--layoutpos", layout_y_expr, vars, vars_size);
+    te_expr *te_status_x_expr = compile_expression("--statuspos", status_x_expr, vars, vars_size);
+    te_expr *te_status_y_expr = compile_expression("--statuspos", status_y_expr, vars, vars_size);
+    te_expr *te_modif_x_expr = compile_expression("--modifpos", modif_x_expr, vars, vars_size);
+    te_expr *te_modif_y_expr = compile_expression("--modifpos", modif_y_expr, vars, vars_size);
+    te_expr *te_bar_expr = compile_expression("--bar-position", bar_expr, vars, vars_size);
 
     if (screen_number < 0 || !(screen_number < xr_screens)) {
         screen_number = 0;
     }
 
     if (xr_screens > 0 && !bar_enabled) {
-        w = xr_resolutions[screen_number].width;
-        h = xr_resolutions[screen_number].height;
-        screen_x = xr_resolutions[screen_number].x;
-        screen_y = xr_resolutions[screen_number].y;
+        width = xr_resolutions[screen_number].width / scaling_factor;
+        height = xr_resolutions[screen_number].height / scaling_factor;
+        screen_x = xr_resolutions[screen_number].x / scaling_factor;
+        screen_y = xr_resolutions[screen_number].y / scaling_factor;
         if (te_ind_x_expr && te_ind_y_expr) {
-            ix = 0;
-            iy = 0;
-            ix = te_eval(te_ind_x_expr);
-            iy = te_eval(te_ind_y_expr);
+            indicator_x = te_eval(te_ind_x_expr);
+            indicator_y = te_eval(te_ind_y_expr);
         } else {
-            ix = xr_resolutions[screen_number].x + (xr_resolutions[screen_number].width / 2);
-            iy = xr_resolutions[screen_number].y + (xr_resolutions[screen_number].height / 2);
+            indicator_x = screen_x + (width / 2);
+            indicator_y = screen_y + (height / 2);
         }
-
-        x = ix - (button_diameter_physical / 2);
-        y = iy - (button_diameter_physical / 2);
-
-        tx = 0;
-        ty = 0;
-        tx = te_eval(te_time_x_expr);
-        ty = te_eval(te_time_y_expr);
-        time_x = tx;
-        time_y = ty;
-        dx = te_eval(te_date_x_expr);
-        dy = te_eval(te_date_y_expr);
-        date_x = dx;
-        date_y = dy;
+        bar_x = indicator_x - (button_diameter_physical / 2);
+        bar_y = indicator_y - (button_diameter_physical / 2);
+        time_x = te_eval(te_time_x_expr);
+        time_y = te_eval(te_time_y_expr);
+        date_x = te_eval(te_date_x_expr);
+        date_y = te_eval(te_date_y_expr);
         layout_x = te_eval(te_layout_x_expr);
         layout_y = te_eval(te_layout_y_expr);
         status_x = te_eval(te_status_x_expr);
@@ -875,21 +871,17 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
         /* We have no information about the screen sizes/positions, so we just
          * place the unlock indicator in the middle of the X root window and
          * hope for the best. */
-        w = last_resolution[0];
-        h = last_resolution[1];
-        ix = last_resolution[0] / 2;
-        iy = last_resolution[1] / 2;
-        x = ix - (button_diameter_physical / 2);
-        y = iy - (button_diameter_physical / 2);
+        width = last_resolution[0] / scaling_factor;
+        height = last_resolution[1] / scaling_factor;
+        indicator_x = width / 2;
+        indicator_y = height / 2;
+        bar_x = indicator_x - (button_diameter_physical / 2);
+        bar_y = indicator_y - (button_diameter_physical / 2);
         if (te_time_x_expr && te_time_y_expr) {
-            tx = te_eval(te_time_x_expr);
-            ty = te_eval(te_time_y_expr);
-            time_x = tx;
-            time_y = ty;
-            dx = te_eval(te_date_x_expr);
-            dy = te_eval(te_date_y_expr);
-            date_x = dx;
-            date_y = dy;
+            time_x = te_eval(te_time_x_expr);
+            time_y = te_eval(te_time_y_expr);
+            date_x = te_eval(te_date_x_expr);
+            date_y = te_eval(te_date_y_expr);
             layout_x = te_eval(te_layout_x_expr);
             layout_y = te_eval(te_layout_y_expr);
             status_x = te_eval(te_status_x_expr);
@@ -898,22 +890,18 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
             mod_y = te_eval(te_modif_y_expr);
         }
     } else {
-        w = xr_resolutions[screen_number].width;
-        h = xr_resolutions[screen_number].height;
-        ix = w / 2;
-        iy = h / 2;
+        width = xr_resolutions[screen_number].width / scaling_factor;
+        height = xr_resolutions[screen_number].height / scaling_factor;
+        indicator_x = width / 2;
+        indicator_y = height / 2;
+        bar_x = indicator_x - (button_diameter_physical / 2);
+        bar_y = indicator_y - (button_diameter_physical / 2);
 
         bar_offset = te_eval(te_bar_expr);
-        tx = 0;
-        ty = 0;
-        tx = te_eval(te_time_x_expr);
-        ty = te_eval(te_time_y_expr);
-        time_x = tx;
-        time_y = ty;
-        dx = te_eval(te_date_x_expr);
-        dy = te_eval(te_date_y_expr);
-        date_x = dx;
-        date_y = dy;
+        time_x = te_eval(te_time_x_expr);
+        time_y = te_eval(te_time_y_expr);
+        date_x = te_eval(te_date_x_expr);
+        date_y = te_eval(te_date_y_expr);
         layout_x = te_eval(te_layout_x_expr);
         layout_y = te_eval(te_layout_y_expr);
         status_x = te_eval(te_status_x_expr);
@@ -936,6 +924,14 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
     te_free(te_modif_y_expr);
     te_free(te_bar_expr);
 
+    DEBUG("Indicator at %fx%f\n", indicator_x, indicator_y);
+    DEBUG("Bar at %fx%f\n", bar_x, bar_y);
+    DEBUG("Time at %fx%f\n", time_x, time_y);
+    DEBUG("Date at %fx%f\n", date_x, date_y);
+    DEBUG("Layout at %fx%f\n", layout_x, layout_y);
+    DEBUG("Status at %fx%f\n", status_x, status_y);
+    DEBUG("Mod at %fx%f\n", mod_x, mod_y);
+
     status_text.x = status_x;
     status_text.y = status_y;
 
@@ -952,7 +948,7 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
 
     // indicator stuff
     if (!bar_enabled) {
-        draw_indic(ctx, ix, iy);
+        draw_indic(ctx, indicator_x, indicator_y);
     } else {
         if (unlock_state == STATE_KEY_ACTIVE ||
             unlock_state == STATE_BACKSPACE_ACTIVE) {
@@ -977,7 +973,7 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
                     break;
             }
         }
-        draw_bar(ctx, x, y, bar_offset);
+        draw_bar(ctx, bar_x, bar_y, bar_offset);
     }
 
     draw_text(ctx, status_text);
