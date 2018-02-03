@@ -6,22 +6,22 @@
  * See LICENSE for licensing information
  *
  */
-#include <stdbool.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-#include <xcb/xcb.h>
-#include <ev.h>
+#include "unlock_indicator.h"
+
 #include <cairo.h>
 #include <cairo/cairo-xcb.h>
+#include <ev.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
+#include "fonts.h"
 #include "i3lock.h"
-#include "xcb.h"
-#include "unlock_indicator.h"
 #include "randr.h"
 #include "tinyexpr.h"
-#include "fonts.h"
+#include "xcb.h"
 
 /* clock stuff */
 #include <time.h>
@@ -32,10 +32,7 @@ extern double ring_width;
 #define BUTTON_RADIUS (circle_radius)
 #define RING_WIDTH (ring_width)
 #define BUTTON_SPACE (BUTTON_RADIUS + (RING_WIDTH / 2))
-#define BUTTON_CENTER (BUTTON_RADIUS + (RING_WIDTH / 2))
 #define BUTTON_DIAMETER (2 * BUTTON_SPACE)
-#define CLOCK_WIDTH 400
-#define CLOCK_HEIGHT 200
 
 /*******************************************************************************
  * Variables defined in i3lock.c.
@@ -45,7 +42,7 @@ extern bool debug_mode;
 
 /* The current position in the input buffer. Useful to determine if any
  * characters of the password have already been entered or not. */
-int input_position;
+extern int input_position;
 
 /* The lock window. */
 extern xcb_window_t win;
@@ -91,12 +88,12 @@ extern float refresh_rate;
 extern bool show_clock;
 extern bool always_show_clock;
 extern bool show_indicator;
-extern int  verif_align;
-extern int  wrong_align;
-extern int  time_align;
-extern int  date_align;
-extern int  layout_align;
-extern int  modif_align;
+extern int verif_align;
+extern int wrong_align;
+extern int time_align;
+extern int date_align;
+extern int layout_align;
+extern int modif_align;
 extern char time_format[32];
 extern char date_format[32];
 extern char *fonts[5];
@@ -169,7 +166,7 @@ rgba_t bshl16;
 rgba_t sep16;
 rgba_t bar16;
 // just rgb
-rgb_t  rgb16;
+rgb_t rgb16;
 
 // experimental bar stuff
 
@@ -205,21 +202,19 @@ static cairo_font_face_t *font_faces[5] = {
  * Pro 13" Retina screen, the scaling factor is 227/96 = 2.36.
  *
  */
-static double scaling_factor(void) {
-    const int dpi = (double) screen->height_in_pixels * 25.4 /
-                    (double) screen->height_in_millimeters;
-    return (dpi / 96.0);
+static double calculate_scaling_factor(void) {
+    const double dpi = (double)screen->height_in_pixels * 25.4 /
+                       (double)screen->height_in_millimeters;
+    return dpi / 96.0;
 }
-
-
 
 static cairo_font_face_t *get_font_face(int which) {
     if (font_faces[which]) {
         return font_faces[which];
     }
-    const unsigned char* face_name = (const unsigned char*) fonts[which];
+    const unsigned char *face_name = (const unsigned char *)fonts[which];
     FcResult result;
-        /*
+    /*
      * Loads the default config.
      * On successive calls, does no work and just returns true.
      */
@@ -274,7 +269,8 @@ static cairo_font_face_t *get_font_face(int which) {
  * Draws the given text onto the cairo context
  */
 static void draw_text(cairo_t *ctx, text_t text) {
-    if (!text.show) return;
+    if (!text.show)
+        return;
     cairo_text_extents_t extents;
 
     cairo_set_font_face(ctx, text.font);
@@ -284,12 +280,12 @@ static void draw_text(cairo_t *ctx, text_t text) {
 
     double x;
 
-    switch(text.align) {
+    switch (text.align) {
         case 1:
             x = text.x;
             break;
         case 2:
-            x= text.x - (extents.width + extents.x_bearing);
+            x = text.x - (extents.width + extents.x_bearing);
             break;
         case 0:
         default:
@@ -310,7 +306,7 @@ static void draw_bar(cairo_t *ctx, double x, double y, double bar_offset) {
     // ideally it'd intelligently span both monitors
     double width, height;
     double back_x = 0, back_y = 0, back_x2 = 0, back_y2 = 0, back_width = 0, back_height = 0;
-    for(int i = 0; i < num_bars; ++i) {
+    for (int i = 0; i < num_bars; ++i) {
         double cur_bar_height = bar_heights[i];
 
         if (cur_bar_height > 0) {
@@ -342,8 +338,7 @@ static void draw_bar(cairo_t *ctx, double x, double y, double bar_offset) {
             y = i * bar_width;
             if (bar_reversed) {
                 x -= width;
-            }
-            else if (bar_bidirectional) {
+            } else if (bar_bidirectional) {
                 width = (cur_bar_height <= 0 ? bar_base_height : cur_bar_height * 2);
                 x = bar_offset - (width / 2) + (bar_base_height / 2);
             }
@@ -354,8 +349,7 @@ static void draw_bar(cairo_t *ctx, double x, double y, double bar_offset) {
             y = bar_offset;
             if (bar_reversed) {
                 y -= height;
-            }
-            else if (bar_bidirectional) {
+            } else if (bar_bidirectional) {
                 height = (cur_bar_height <= 0 ? bar_base_height : cur_bar_height * 2);
                 y = bar_offset - (height / 2) + (bar_base_height / 2);
             }
@@ -368,9 +362,8 @@ static void draw_bar(cairo_t *ctx, double x, double y, double bar_offset) {
                 back_width = bar_base_height - cur_bar_height;
                 back_height = height;
                 if (bar_reversed) {
-                   back_x = bar_offset - bar_base_height;
-                }
-                else if (bar_bidirectional) {
+                    back_x = bar_offset - bar_base_height;
+                } else if (bar_bidirectional) {
                     back_x = bar_offset;
                     back_y2 = y;
                     back_width = (bar_base_height - (cur_bar_height * 2)) / 2;
@@ -383,12 +376,11 @@ static void draw_bar(cairo_t *ctx, double x, double y, double bar_offset) {
                 back_height = bar_base_height - cur_bar_height;
                 if (bar_reversed) {
                     back_y = bar_offset - bar_base_height;
-                }
-                else if (bar_bidirectional) {
+                } else if (bar_bidirectional) {
                     back_x2 = x;
                     back_y = bar_offset;
                     back_height = (bar_base_height - (cur_bar_height * 2)) / 2;
-                    back_y2= bar_offset + (cur_bar_height * 2) + back_height;
+                    back_y2 = bar_offset + (cur_bar_height * 2) + back_height;
                 }
             }
         }
@@ -408,8 +400,7 @@ static void draw_bar(cairo_t *ctx, double x, double y, double bar_offset) {
                 break;
         }
 
-        if (cur_bar_height > 0 && cur_bar_height < bar_base_height &&  ((bar_bidirectional && ((cur_bar_height * 2) < bar_base_height))
-                || (!bar_bidirectional && (cur_bar_height < bar_base_height)))) {
+        if (cur_bar_height > 0 && cur_bar_height < bar_base_height && ((bar_bidirectional && ((cur_bar_height * 2) < bar_base_height)) || (!bar_bidirectional && (cur_bar_height < bar_base_height)))) {
             cairo_rectangle(ctx, back_x, back_y, back_width, back_height);
             cairo_fill(ctx);
             if (bar_bidirectional) {
@@ -418,17 +409,15 @@ static void draw_bar(cairo_t *ctx, double x, double y, double bar_offset) {
             }
         }
     }
-    for(int i = 0; i < num_bars; ++i) {
+    for (int i = 0; i < num_bars; ++i) {
         if (bar_heights[i] > 0)
             bar_heights[i] -= bar_periodic_step;
     }
 }
 
-
 static void draw_indic(cairo_t *ctx, double ind_x, double ind_y) {
     if (unlock_indicator &&
         (unlock_state >= STATE_KEY_PRESSED || auth_state > STATE_AUTH_IDLE || show_indicator)) {
-        cairo_scale(ctx, scaling_factor(), scaling_factor());
         /* Draw a (centered) circle with transparent background. */
         cairo_set_line_width(ctx, RING_WIDTH);
         cairo_arc(ctx, ind_x, ind_y, BUTTON_RADIUS, 0, 2 * M_PI);
@@ -459,20 +448,20 @@ static void draw_indic(cairo_t *ctx, double ind_x, double ind_y) {
             case STATE_AUTH_LOCK:
                 cairo_set_source_rgba(ctx, ringver16.red, ringver16.green, ringver16.blue, ringver16.alpha);
                 if (internal_line_source == 1) {
-                  line16.red = ringver16.red;
-                  line16.green = ringver16.green;
-                  line16.blue = ringver16.blue;
-                  line16.alpha = ringver16.alpha;
+                    line16.red = ringver16.red;
+                    line16.green = ringver16.green;
+                    line16.blue = ringver16.blue;
+                    line16.alpha = ringver16.alpha;
                 }
                 break;
             case STATE_AUTH_WRONG:
             case STATE_I3LOCK_LOCK_FAILED:
                 cairo_set_source_rgba(ctx, ringwrong16.red, ringwrong16.green, ringwrong16.blue, ringwrong16.alpha);
                 if (internal_line_source == 1) {
-                  line16.red = ringwrong16.red;
-                  line16.green = ringwrong16.green;
-                  line16.blue = ringwrong16.blue;
-                  line16.alpha = ringwrong16.alpha;
+                    line16.red = ringwrong16.red;
+                    line16.green = ringwrong16.green;
+                    line16.blue = ringwrong16.blue;
+                    line16.alpha = ringwrong16.alpha;
                 }
                 break;
             case STATE_AUTH_IDLE:
@@ -488,17 +477,17 @@ static void draw_indic(cairo_t *ctx, double ind_x, double ind_y) {
                 }
                 cairo_set_source_rgba(ctx, ring16.red, ring16.green, ring16.blue, ring16.alpha);
                 if (internal_line_source == 1) {
-                  line16.red = ring16.red;
-                  line16.green = ring16.green;
-                  line16.blue = ring16.blue;
-                  line16.alpha = ring16.alpha;
+                    line16.red = ring16.red;
+                    line16.green = ring16.green;
+                    line16.blue = ring16.blue;
+                    line16.alpha = ring16.alpha;
                 }
                 break;
         }
         cairo_stroke(ctx);
 
         /* Draw an inner separator line. */
-        if (internal_line_source != 2) { //pretty sure this only needs drawn if it's being drawn over the inside?
+        if (internal_line_source != 2) {  //pretty sure this only needs drawn if it's being drawn over the inside?
             cairo_set_source_rgba(ctx, line16.red, line16.green, line16.blue, line16.alpha);
             cairo_set_line_width(ctx, 2.0);
             cairo_arc(ctx, ind_x, ind_y, BUTTON_RADIUS - 5, 0, 2 * M_PI);
@@ -554,13 +543,13 @@ static void draw_indic(cairo_t *ctx, double ind_x, double ind_y) {
                                  (strtol(colorstring_tmparr[3], NULL, 16))};
  */
 
-static void set_color(char* dest, const char* src, int offset) {
+static void set_color(char *dest, const char *src, int offset) {
     dest[0] = src[offset];
     dest[1] = src[offset + 1];
     dest[2] = '\0';
 }
 
-static void colorgen(rgba_str_t* tmp, const char* src, rgba_t* dest) {
+static void colorgen(rgba_str_t *tmp, const char *src, rgba_t *dest) {
     set_color(tmp->red, src, 0);
     set_color(tmp->green, src, 2);
     set_color(tmp->blue, src, 4);
@@ -572,7 +561,7 @@ static void colorgen(rgba_str_t* tmp, const char* src, rgba_t* dest) {
     dest->alpha = strtol(tmp->alpha, NULL, 16) / 255.0;
 }
 
-static void colorgen_rgb(rgb_str_t* tmp, const char* src, rgb_t* dest) {
+static void colorgen_rgb(rgb_str_t *tmp, const char *src, rgb_t *dest) {
     set_color(tmp->red, src, 0);
     set_color(tmp->green, src, 2);
     set_color(tmp->blue, src, 4);
@@ -584,7 +573,7 @@ static void colorgen_rgb(rgb_str_t* tmp, const char* src, rgb_t* dest) {
 
 void init_colors_once(void) {
     rgba_str_t tmp;
-    rgb_str_t  tmp_rgb;
+    rgb_str_t tmp_rgb;
 
     /* build indicator color arrays */
     colorgen(&tmp, insidevercolor, &insidever16);
@@ -606,7 +595,16 @@ void init_colors_once(void) {
     colorgen_rgb(&tmp_rgb, color, &rgb16);
 }
 
-// init_fonts_once() ?
+te_expr *compile_expression(const char *const from, const char *expression, const te_variable *variables, int var_count);
+te_expr *compile_expression(const char *const from, const char *expression, const te_variable *variables, int var_count) {
+    int te_err = 0;
+    te_expr *expr = te_compile(expression, variables, var_count, &te_err);
+    if (te_err) {
+        fprintf(stderr, "Failed to reason about '%s' given by '%s'\n", expression, from);
+        exit(1);
+    }
+    return expr;
+}
 
 /*
  * Draws global image with fill color onto a pixmap with the given
@@ -614,10 +612,8 @@ void init_colors_once(void) {
  *
  */
 xcb_pixmap_t draw_image(uint32_t *resolution) {
+    const double scaling_factor = calculate_scaling_factor();
     xcb_pixmap_t bg_pixmap = XCB_NONE;
-    int button_diameter_physical = ceil(scaling_factor() * BUTTON_DIAMETER);
-    DEBUG("scaling_factor is %.f, physical diameter is %d px\n",
-          scaling_factor(), button_diameter_physical);
 
     if (!vistype)
         vistype = get_root_visual_type(screen);
@@ -629,8 +625,9 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
      */
     cairo_surface_t *output = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, resolution[0], resolution[1]);
     cairo_t *ctx = cairo_create(output);
+    cairo_scale(ctx, scaling_factor, scaling_factor);
 
-//    cairo_set_font_face(ctx, get_font_face(0));
+    //    cairo_set_font_face(ctx, get_font_face(0));
 
     cairo_surface_t *xcb_output = cairo_xcb_surface_create(conn, bg_pixmap, vistype, resolution[0], resolution[1]);
     cairo_t *xcb_ctx = cairo_create(xcb_output);
@@ -639,7 +636,7 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
         if (blur_img) {
             cairo_set_source_surface(xcb_ctx, blur_img, 0, 0);
             cairo_paint(xcb_ctx);
-        } else { // img can no longer be non-NULL if blur_img is not null
+        } else {  // img can no longer be non-NULL if blur_img is not null
             if (!tile) {
                 cairo_set_source_surface(xcb_ctx, img, 0, 0);
                 cairo_paint(xcb_ctx);
@@ -691,7 +688,6 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
 
     if (unlock_indicator &&
         (unlock_state >= STATE_KEY_PRESSED || auth_state > STATE_AUTH_IDLE || show_indicator)) {
-
         switch (auth_state) {
             case STATE_AUTH_VERIFY:
                 status_text.show = true;
@@ -774,7 +770,7 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
 
     if (show_clock && (!status_text.show || always_show_clock)) {
         time_t rawtime;
-        struct tm* timeinfo;
+        struct tm *timeinfo;
         time(&rawtime);
         timeinfo = localtime(&rawtime);
 
@@ -797,84 +793,74 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
     }
 
     // initialize positioning vars
-    double ix, iy;
-    double x, y;
-    double screen_x, screen_y;
-    double w, h;
-    double tx = 0;
-    double ty = 0;
-    double dx = 0;
-    double dy = 0;
+    double screen_x = 0, screen_y = 0,
+           width = 0, height = 0;
 
-    double radius = BUTTON_RADIUS;
-    double bar_offset = 0;
-
-    int te_x_err;
-    int te_y_err;
-    // variable mapping for evaluating the clock position expression
-    te_variable vars[] = {
-        {"w", &w}, {"h", &h},
-        {"x", &screen_x}, {"y", &screen_y},
-        {"ix", &ix}, {"iy", &iy},
-        {"tx", &tx}, {"ty", &ty},
-        {"dx", &dx}, {"dy", &dy},
-        {"r", &radius}
-    };
-#define NUM_VARS 11
-
-    te_expr *te_ind_x_expr = te_compile(ind_x_expr, vars, NUM_VARS, &te_x_err);
-    te_expr *te_ind_y_expr = te_compile(ind_y_expr, vars, NUM_VARS, &te_y_err);
-    te_expr *te_time_x_expr = te_compile(time_x_expr, vars, NUM_VARS, &te_x_err);
-    te_expr *te_time_y_expr = te_compile(time_y_expr, vars, NUM_VARS, &te_y_err);
-    te_expr *te_date_x_expr = te_compile(date_x_expr, vars, NUM_VARS, &te_x_err);
-    te_expr *te_date_y_expr = te_compile(date_y_expr, vars, NUM_VARS, &te_y_err);
-    te_expr *te_layout_x_expr = te_compile(layout_x_expr, vars, NUM_VARS, &te_x_err);
-    te_expr *te_layout_y_expr = te_compile(layout_y_expr, vars, NUM_VARS, &te_y_err);
-    te_expr *te_status_x_expr = te_compile(status_x_expr, vars, NUM_VARS, &te_x_err);
-    te_expr *te_status_y_expr = te_compile(status_y_expr, vars, NUM_VARS, &te_y_err);
-    te_expr *te_modif_x_expr = te_compile(modif_x_expr, vars, NUM_VARS, &te_x_err);
-    te_expr *te_modif_y_expr = te_compile(modif_y_expr, vars, NUM_VARS, &te_y_err);
-    te_expr *te_bar_expr = te_compile(bar_expr, vars, NUM_VARS, &te_x_err);
-
-    double time_x = 0, time_y = 0,
+    double mod_x = 0, mod_y = 0,
            date_x = 0, date_y = 0,
-           mod_x = 0, mod_y = 0,
+           bar_x = 0, bar_y = 0,
            layout_x = 0, layout_y = 0,
-           status_x = 0, status_y = 0;
+           status_x = 0, status_y = 0,
+           time_x = 0, time_y = 0,
+           indicator_x = 0, indicator_y = 0;
+
+    double radius = (circle_radius + ring_width);
+    double bar_offset = 0;
+    int button_diameter_physical = ceil(scaling_factor * BUTTON_DIAMETER);
+    DEBUG("scaling_factor is %.f, physical diameter is %d px\n",
+          scaling_factor, button_diameter_physical);
+
+    // variable mapping for evaluating the clock position expression
+    const unsigned int vars_size = 11;
+    te_variable vars[] =
+        {{"w", &width},
+         {"h", &height},
+         {"x", &screen_x},
+         {"y", &screen_y},
+         {"ix", &indicator_x},
+         {"iy", &indicator_y},
+         {"tx", &time_x},
+         {"ty", &time_y},
+         {"dx", &date_x},
+         {"dy", &date_y},
+         {"r", &radius}};
+
+    te_expr *te_ind_x_expr = compile_expression("--indpos", ind_x_expr, vars, vars_size);
+    te_expr *te_ind_y_expr = compile_expression("--indpos", ind_y_expr, vars, vars_size);
+    te_expr *te_time_x_expr = compile_expression("--timepos", time_x_expr, vars, vars_size);
+    te_expr *te_time_y_expr = compile_expression("--timepos", time_y_expr, vars, vars_size);
+    te_expr *te_date_x_expr = compile_expression("--datepos", date_x_expr, vars, vars_size);
+    te_expr *te_date_y_expr = compile_expression("--datepos", date_y_expr, vars, vars_size);
+    te_expr *te_layout_x_expr = compile_expression("--layoutpos", layout_x_expr, vars, vars_size);
+    te_expr *te_layout_y_expr = compile_expression("--layoutpos", layout_y_expr, vars, vars_size);
+    te_expr *te_status_x_expr = compile_expression("--statuspos", status_x_expr, vars, vars_size);
+    te_expr *te_status_y_expr = compile_expression("--statuspos", status_y_expr, vars, vars_size);
+    te_expr *te_modif_x_expr = compile_expression("--modifpos", modif_x_expr, vars, vars_size);
+    te_expr *te_modif_y_expr = compile_expression("--modifpos", modif_y_expr, vars, vars_size);
+    te_expr *te_bar_expr = compile_expression("--bar-position", bar_expr, vars, vars_size);
 
     if (screen_number < 0 || !(screen_number < xr_screens)) {
         screen_number = 0;
     }
 
     if (xr_screens > 0 && !bar_enabled) {
-        w = xr_resolutions[screen_number].width;
-        h = xr_resolutions[screen_number].height;
-        screen_x = xr_resolutions[screen_number].x;
-        screen_y = xr_resolutions[screen_number].y;
+        width = xr_resolutions[screen_number].width / scaling_factor;
+        height = xr_resolutions[screen_number].height / scaling_factor;
+        screen_x = xr_resolutions[screen_number].x / scaling_factor;
+        screen_y = xr_resolutions[screen_number].y / scaling_factor;
         if (te_ind_x_expr && te_ind_y_expr) {
-            ix = 0;
-            iy = 0;
-            ix = te_eval(te_ind_x_expr);
-            iy = te_eval(te_ind_y_expr);
+            indicator_x = te_eval(te_ind_x_expr);
+            indicator_y = te_eval(te_ind_y_expr);
+        } else {
+            indicator_x = screen_x + (width / 2);
+            indicator_y = screen_y + (height / 2);
         }
-        else {
-            ix = xr_resolutions[screen_number].x + (xr_resolutions[screen_number].width / 2);
-            iy = xr_resolutions[screen_number].y + (xr_resolutions[screen_number].height / 2);
-        }
-
-        x = ix - (button_diameter_physical / 2);
-        y = iy - (button_diameter_physical / 2);
-
-        tx = 0;
-        ty = 0;
-        tx = te_eval(te_time_x_expr);
-        ty = te_eval(te_time_y_expr);
-        time_x = tx;
-        time_y = ty;
-        dx = te_eval(te_date_x_expr);
-        dy = te_eval(te_date_y_expr);
-        date_x = dx;
-        date_y = dy;
+        bar_x = indicator_x - (button_diameter_physical / 2);
+        bar_y = indicator_y - (button_diameter_physical / 2);
+        time_x = te_eval(te_time_x_expr);
+        time_y = te_eval(te_time_y_expr);
+        date_x = te_eval(te_date_x_expr);
+        date_y = te_eval(te_date_y_expr);
         layout_x = te_eval(te_layout_x_expr);
         layout_y = te_eval(te_layout_y_expr);
         status_x = te_eval(te_status_x_expr);
@@ -885,21 +871,17 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
         /* We have no information about the screen sizes/positions, so we just
          * place the unlock indicator in the middle of the X root window and
          * hope for the best. */
-        w = last_resolution[0];
-        h = last_resolution[1];
-        ix = last_resolution[0] / 2;
-        iy = last_resolution[1] / 2;
-        x = ix - (button_diameter_physical / 2);
-        y = iy - (button_diameter_physical / 2);
+        width = last_resolution[0] / scaling_factor;
+        height = last_resolution[1] / scaling_factor;
+        indicator_x = width / 2;
+        indicator_y = height / 2;
+        bar_x = indicator_x - (button_diameter_physical / 2);
+        bar_y = indicator_y - (button_diameter_physical / 2);
         if (te_time_x_expr && te_time_y_expr) {
-            tx = te_eval(te_time_x_expr);
-            ty = te_eval(te_time_y_expr);
-            time_x = tx;
-            time_y = ty;
-            dx = te_eval(te_date_x_expr);
-            dy = te_eval(te_date_y_expr);
-            date_x = dx;
-            date_y = dy;
+            time_x = te_eval(te_time_x_expr);
+            time_y = te_eval(te_time_y_expr);
+            date_x = te_eval(te_date_x_expr);
+            date_y = te_eval(te_date_y_expr);
             layout_x = te_eval(te_layout_x_expr);
             layout_y = te_eval(te_layout_y_expr);
             status_x = te_eval(te_status_x_expr);
@@ -908,22 +890,18 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
             mod_y = te_eval(te_modif_y_expr);
         }
     } else {
-        w = xr_resolutions[screen_number].width;
-        h = xr_resolutions[screen_number].height;
-        ix = w / 2;
-        iy = h / 2;
+        width = xr_resolutions[screen_number].width / scaling_factor;
+        height = xr_resolutions[screen_number].height / scaling_factor;
+        indicator_x = width / 2;
+        indicator_y = height / 2;
+        bar_x = indicator_x - (button_diameter_physical / 2);
+        bar_y = indicator_y - (button_diameter_physical / 2);
 
         bar_offset = te_eval(te_bar_expr);
-        tx = 0;
-        ty = 0;
-        tx = te_eval(te_time_x_expr);
-        ty = te_eval(te_time_y_expr);
-        time_x = tx;
-        time_y = ty;
-        dx = te_eval(te_date_x_expr);
-        dy = te_eval(te_date_y_expr);
-        date_x = dx;
-        date_y = dy;
+        time_x = te_eval(te_time_x_expr);
+        time_y = te_eval(te_time_y_expr);
+        date_x = te_eval(te_date_x_expr);
+        date_y = te_eval(te_date_y_expr);
         layout_x = te_eval(te_layout_x_expr);
         layout_y = te_eval(te_layout_y_expr);
         status_x = te_eval(te_status_x_expr);
@@ -946,6 +924,14 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
     te_free(te_modif_y_expr);
     te_free(te_bar_expr);
 
+    DEBUG("Indicator at %fx%f\n", indicator_x, indicator_y);
+    DEBUG("Bar at %fx%f\n", bar_x, bar_y);
+    DEBUG("Time at %fx%f\n", time_x, time_y);
+    DEBUG("Date at %fx%f\n", date_x, date_y);
+    DEBUG("Layout at %fx%f\n", layout_x, layout_y);
+    DEBUG("Status at %fx%f\n", status_x, status_y);
+    DEBUG("Mod at %fx%f\n", mod_x, mod_y);
+
     status_text.x = status_x;
     status_text.y = status_y;
 
@@ -962,7 +948,7 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
 
     // indicator stuff
     if (!bar_enabled) {
-        draw_indic(ctx, ix, iy);
+        draw_indic(ctx, indicator_x, indicator_y);
     } else {
         if (unlock_state == STATE_KEY_ACTIVE ||
             unlock_state == STATE_BACKSPACE_ACTIVE) {
@@ -970,22 +956,24 @@ xcb_pixmap_t draw_image(uint32_t *resolution) {
             // maybe see about doing ((double) rand() / RAND_MAX) * num_bars
             int index = rand() % num_bars;
             bar_heights[index] = max_bar_height;
-            for(int i = 0; i < ((max_bar_height / bar_step) + 1); ++i) {
+            for (int i = 0; i < ((max_bar_height / bar_step) + 1); ++i) {
                 int low_ind = index - i;
                 while (low_ind < 0) {
                     low_ind += num_bars;
                 }
                 int high_ind = (index + i) % num_bars;
                 int tmp_height = max_bar_height - (bar_step * i);
-                if (tmp_height < 0) tmp_height = 0;
+                if (tmp_height < 0)
+                    tmp_height = 0;
                 if (bar_heights[low_ind] < tmp_height)
                     bar_heights[low_ind] = tmp_height;
                 if (bar_heights[high_ind] < tmp_height)
                     bar_heights[high_ind] = tmp_height;
-                if (tmp_height == 0) break;
+                if (tmp_height == 0)
+                    break;
             }
         }
-        draw_bar(ctx, x, y, bar_offset);
+        draw_bar(ctx, bar_x, bar_y, bar_offset);
     }
 
     draw_text(ctx, status_text);
@@ -1033,9 +1021,9 @@ void clear_indicator(void) {
     redraw_screen();
 }
 
-void* start_time_redraw_tick_pthread(void* arg) {
-    struct timespec *ts = (struct timespec *) arg;
-    while(1) {
+void *start_time_redraw_tick_pthread(void *arg) {
+    struct timespec *ts = (struct timespec *)arg;
+    while (1) {
         nanosleep(ts, NULL);
         redraw_screen();
     }
@@ -1046,13 +1034,13 @@ static void time_redraw_cb(struct ev_loop *loop, ev_periodic *w, int revents) {
     redraw_screen();
 }
 
-void start_time_redraw_tick(struct ev_loop* main_loop) {
+void start_time_redraw_tick(struct ev_loop *main_loop) {
     if (time_redraw_tick) {
         ev_periodic_set(time_redraw_tick, 0., refresh_rate, 0);
         ev_periodic_again(main_loop, time_redraw_tick);
     } else {
         if (!(time_redraw_tick = calloc(sizeof(struct ev_periodic), 1))) {
-           return;
+            return;
         }
         ev_periodic_init(time_redraw_tick, time_redraw_cb, 0., refresh_rate, 0);
         ev_periodic_start(main_loop, time_redraw_tick);

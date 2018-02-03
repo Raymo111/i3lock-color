@@ -1,7 +1,8 @@
-#ifndef _UNLOCK_INDICATOR_H
-#define _UNLOCK_INDICATOR_H
+#ifndef UNLOCK_INDICATOR_H
+#define UNLOCK_INDICATOR_H
 
 #include <ev.h>
+#include <xcb/xcb.h>
 
 typedef struct rgb {
 	double red;
