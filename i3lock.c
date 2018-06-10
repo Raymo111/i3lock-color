@@ -1296,7 +1296,7 @@ int main(int argc, char *argv[]) {
     while ((o = getopt_long(argc, argv, optstring, longopts, &longoptind)) != -1) {
         switch (o) {
             case 'v':
-                errx(EXIT_SUCCESS, "version " I3LOCK_VERSION " © 2010 Michael Stapelberg");
+                errx(EXIT_SUCCESS, "version " I3LOCK_VERSION " (i3lock-color) © 2010 Michael Stapelberg");
             case 'n':
                 dont_fork = true;
                 break;
