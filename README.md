@@ -46,7 +46,7 @@ You can also specify additional options, as detailed in the manpage. This includ
 	- Backspace highlight color
 	- Text colors for most/all strings
 	- Changing all of the above depending on PAM's authentication status
-- Blurring the current screen and using that as the lock background    
+- Blurring the current screen and using that as the lock background
 - Showing a clock in the indicator
 - Refreshing on a timer, instead of on each keypress
 - Positioning the various UI elements
@@ -106,6 +106,9 @@ You may choose to modify the script based on your needs/OS/distro.
 [Stable version in Community](https://www.archlinux.org/packages/community/x86_64/i3lock-color/)
 
 [Git Version on AUR](https://aur.archlinux.org/packages/i3lock-color-git/)
+
+## Debian Packages
+[i3lock-color-debian](https://github.com/barnumbirr/i3lock-color-debian)
 
 ## FreeBSD port
 [i3lock-color-port](https://github.com/rkashapov/i3lock-color-port/)
