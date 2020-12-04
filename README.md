@@ -90,22 +90,7 @@ sudo apt install autoconf gcc make pkg-config libpam0g-dev libcairo2-dev libfont
 Run this command to install all dependencies:
 
 ```sh
-sudo dnf install -y \
-autoconf \
-automake \
-cairo-devel \
-fontconfig \
-gcc \
-libev-devel \
-libjpeg-turbo-devel \
-libXinerama \
-libxkbcommon-devel \
-libxkbcommon-x11-devel \
-libXrandr \
-pam-devel \
-pkgconf \
-xcb-util-image-devel \
-xcb-util-xrm-devel
+sudo dnf install -y autoconf automake cairo-devel fontconfig gcc libev-devel libjpeg-turbo-devel libXinerama libxkbcommon-devel libxkbcommon-x11-devel libXrandr pam-devel pkgconf xcb-util-image-devel xcb-util-xrm-devel
 ```
 
 ## Building i3lock-color
