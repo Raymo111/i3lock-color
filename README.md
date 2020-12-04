@@ -86,6 +86,28 @@ sudo apt install autoconf gcc make pkg-config libpam0g-dev libcairo2-dev libfont
 - xcb-util-image
 - xcb-util-xrm
 
+### Fedora
+Run this command to install all dependencies:
+
+```sh
+sudo dnf install -y \
+autoconf \
+automake \
+cairo-devel \
+fontconfig \
+gcc \
+libev-devel \
+libjpeg-turbo-devel \
+libXinerama \
+libxkbcommon-devel \
+libxkbcommon-x11-devel \
+libXrandr \
+pam-devel \
+pkgconf \
+xcb-util-image-devel \
+xcb-util-xrm-devel
+```
+
 ## Building i3lock-color
 Before you build - check and see if there's a packaged version available for your distro (there usually is, either in a community repo/PPA).
 
