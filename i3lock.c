@@ -92,17 +92,18 @@ char greetercolor[9] = "000000ff";
 
 /* int defining which display the lock indicator should be shown on. If -1, then show on all displays.*/
 int screen_number = 0;
+
 /* default is to use the supplied line color, 1 will be ring color, 2 will be to use the inside color for ver/wrong/etc */
 int internal_line_source = 0;
-/* bool for showing the clock; why am I commenting this? */
+
+/* refresh rate in seconds, default to 1s */
+float refresh_rate = 1.0;
+
 bool show_clock = false;
 bool slideshow_enabled = false;
 bool always_show_clock = false;
 bool show_indicator = false;
-float refresh_rate = 1.0;
-
-/* bool for hiding mod text */
-bool show_mod_text = true;
+bool show_modkey_text = true;
 
 /* there's some issues with compositing - upstream removed support for this, but we'll allow people to supply an arg to enable it */
 bool composite = false;
@@ -579,7 +580,7 @@ static void input_done(void) {
         else if (strcmp(mod_name, XKB_MOD_NAME_LOGO) == 0)
             mod_name = "Super";
 
-        if (show_mod_text)
+        if (show_modkey_text)
         {
             char *tmp;
             if (modifier_string == NULL) {
@@ -1777,7 +1778,7 @@ int main(int argc, char *argv[]) {
                 greeter_text = optarg;
                 break;
             case 519:
-                show_mod_text = false;
+                show_modkey_text = false;
                 break;
 
 			// Font stuff
