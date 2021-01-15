@@ -580,8 +580,7 @@ static void input_done(void) {
         else if (strcmp(mod_name, XKB_MOD_NAME_LOGO) == 0)
             mod_name = "Super";
 
-        if (show_modkey_text)
-        {
+        if (show_modkey_text) {
             char *tmp;
             if (modifier_string == NULL) {
                 if (asprintf(&tmp, "%s", mod_name) != -1)
@@ -1466,7 +1465,7 @@ int main(int argc, char *argv[]) {
         {"locktext", required_argument, NULL, 516},
         {"lockfailedtext", required_argument, NULL, 517},
         {"greetertext", required_argument, NULL, 518},
-        {"no-modkey-text", no_argument, NULL, 519},
+        {"no-modkeytext", no_argument, NULL, 519},
 
         // fonts
         {"time-font", required_argument, NULL, 520},
