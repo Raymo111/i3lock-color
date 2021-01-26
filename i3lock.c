@@ -90,6 +90,13 @@ char bshlcolor[9] = "db3300ff";
 char separatorcolor[9] = "000000ff";
 char greetercolor[9] = "000000ff";
 
+char verifoutlinecolor[9] = "00000000";
+char wrongoutlinecolor[9] = "00000000";
+char layoutoutlinecolor[9] = "00000000";
+char timeoutlinecolor[9] = "00000000";
+char dateoutlinecolor[9] = "00000000";
+char greeteroutlinecolor[9] = "00000000";
+
 /* int defining which display the lock indicator should be shown on. If -1, then show on all displays.*/
 int screen_number = 0;
 
@@ -171,6 +178,14 @@ double layout_size = 14.0;
 double circle_radius = 90.0;
 double ring_width = 7.0;
 double greeter_size = 32.0;
+
+double timeoutlinewidth = 0;
+double dateoutlinewidth = 0;
+double verifoutlinewidth = 0;
+double wrongoutlinewidth = 0;
+double modifieroutlinewidth = 0;
+double layoutoutlinewidth = 0;
+double greeteroutlinewidth = 0;
 
 char* verif_text = "verifying…";
 char* wrong_text = "wrong!";
@@ -1435,6 +1450,14 @@ int main(int argc, char *argv[]) {
         {"separatorcolor", required_argument, NULL, 314},
         {"greetercolor", required_argument, NULL, 315},
 
+        // text outline colors
+        {"verifoutlinecolor", required_argument, NULL, 316},
+        {"wrongoutlinecolor", required_argument, NULL, 317},
+        {"layoutoutlinecolor", required_argument, NULL, 318},
+        {"timeoutlinecolor", required_argument, NULL, 319},
+        {"dateoutlinecolor", required_argument, NULL, 320},
+        {"greeteroutlinecolor", required_argument, NULL, 321},
+
         {"line-uses-ring", no_argument, NULL, 'r'},
         {"line-uses-inside", no_argument, NULL, 's'},
 
@@ -1495,6 +1518,15 @@ int main(int argc, char *argv[]) {
         {"indpos", required_argument, NULL, 547},
         {"greeterpos", required_argument, NULL, 548},
 
+        // text outline width
+        {"timeoutlinewidth", required_argument, NULL, 560},
+        {"dateoutlinewidth", required_argument, NULL, 561},
+        {"verifoutlinewidth", required_argument, NULL, 562},
+        {"wrongoutlinewidth", required_argument, NULL, 563},
+        {"modifieroutlinewidth", required_argument, NULL, 564},
+        {"layoutoutlinewidth", required_argument, NULL, 565},
+        {"greeteroutlinewidth", required_argument, NULL, 566},
+
 		// pass keys
         {"pass-media-keys", no_argument, NULL, 601},
         {"pass-screen-keys", no_argument, NULL, 602},
@@ -1547,6 +1579,15 @@ int main(int argc, char *argv[]) {
     }\
     if (strlen(arg) != 8 || sscanf(arg, "%08[0-9a-fA-F]", acolor) != 1)\
         errx(1, #acolor " is invalid, color must be given in 3 or 4-byte format: rrggbb[aa]\n");
+
+#define parse_outline_width(awidth)\
+    arg = optarg;\
+    if (sscanf(arg, "%lf", &awidth) != 1)\
+        errx(1, #awidth " must be a number\n");\
+    if (awidth < 0) {\
+        fprintf(stderr, #awidth " must be a positive double; ignoring...\n");\
+        awidth = 0;\
+    }
 
     while ((o = getopt_long(argc, argv, optstring, longopts, &longoptind)) != -1) {
         switch (o) {
@@ -1674,6 +1715,25 @@ int main(int argc, char *argv[]) {
             case 315:
                 parse_color(greetercolor);
                 break;
+            case  316:
+                parse_color(verifoutlinecolor);
+                break;
+            case  317:
+                parse_color(wrongoutlinecolor);
+                break;
+            case  318:
+                parse_color(layoutoutlinecolor);
+                break;
+            case  319:
+                parse_color(timeoutlinecolor);
+                break;
+            case  320:
+                parse_color(dateoutlinecolor);
+                break;
+            case  321:
+                parse_color(greeteroutlinecolor);
+                break;
+
 
 			// General indicator opts
             case 400:
@@ -1970,6 +2030,30 @@ int main(int argc, char *argv[]) {
                     errx(1, "indpos must be of the form x:y\n");
                 }
                 break;
+
+            // text outline width
+            case 560:
+                parse_outline_width(timeoutlinewidth);
+                break;
+            case 561:
+                parse_outline_width(dateoutlinewidth);
+                break;
+            case 562:
+                parse_outline_width(verifoutlinewidth);
+                break;
+            case 563:
+                parse_outline_width(wrongoutlinewidth);
+                break;
+            case 564:
+                parse_outline_width(modifieroutlinewidth);
+                break;
+            case 565:
+                parse_outline_width(layoutoutlinewidth);
+                break;
+            case 566:
+                parse_outline_width(greeteroutlinewidth);
+                break;
+
 
 			// Pass keys
 			case 601:

@@ -18,11 +18,11 @@ typedef struct text {
     bool show;
 
     char str[512];
-    double size;
+    double size, outline_width;
 
     cairo_font_face_t *font;
 
-    rgba_t color;
+    rgba_t color, outline_color;
     double x, y;
 
     int align;

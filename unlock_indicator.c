@@ -94,6 +94,13 @@ extern char separatorcolor[9];
 extern char greetercolor[9];
 extern int internal_line_source;
 
+extern char verifoutlinecolor[9];
+extern char wrongoutlinecolor[9];
+extern char layoutoutlinecolor[9];
+extern char timeoutlinecolor[9];
+extern char dateoutlinecolor[9];
+extern char greeteroutlinecolor[9];
+
 extern int screen_number;
 extern float refresh_rate;
 
@@ -136,6 +143,14 @@ extern double wrong_size;
 extern double modifier_size;
 extern double layout_size;
 extern double greeter_size;
+
+extern double timeoutlinewidth;
+extern double dateoutlinewidth;
+extern double verifoutlinewidth;
+extern double wrongoutlinewidth;
+extern double modifieroutlinewidth;
+extern double layoutoutlinewidth;
+extern double greeteroutlinewidth;
 
 extern char *verif_text;
 extern char *wrong_text;
@@ -193,6 +208,13 @@ rgba_t sep16;
 rgba_t bar16;
 rgba_t greeter16;
 rgba_t background;
+
+rgba_t verifoutline16;
+rgba_t wrongoutline16;
+rgba_t layoutoutline16;
+rgba_t timeoutline16;
+rgba_t dateoutline16;
+rgba_t greeteroutline16;
 
 // experimental bar stuff
 
@@ -311,8 +333,12 @@ static void draw_text(cairo_t *ctx, text_t text) {
 
     cairo_set_source_rgba(ctx, text.color.red, text.color.green, text.color.blue, text.color.alpha);
     cairo_move_to(ctx, x, text.y);
-    cairo_show_text(ctx, text.str);
 
+    cairo_text_path(ctx, text.str);
+    cairo_fill_preserve(ctx);
+
+    cairo_set_source_rgba(ctx, text.outline_color.red, text.outline_color.green, text.outline_color.blue, text.outline_color.alpha);
+    cairo_set_line_width(ctx, text.outline_width);
     cairo_stroke(ctx);
 }
 
@@ -603,6 +629,13 @@ void init_colors_once(void) {
     colorgen(&tmp, bar_base_color, &bar16);
     colorgen(&tmp, greetercolor, &greeter16);
     colorgen(&tmp, color, &background);
+
+    colorgen(&tmp, verifoutlinecolor, &verifoutline16);
+    colorgen(&tmp, wrongoutlinecolor, &wrongoutline16);
+    colorgen(&tmp, layoutoutlinecolor, &layoutoutline16);
+    colorgen(&tmp, timeoutlinecolor, &timeoutline16);
+    colorgen(&tmp, dateoutlinecolor, &dateoutline16);
+    colorgen(&tmp, greeteroutlinecolor, &greeteroutline16);
 }
 
 static te_expr *compile_expression(const char *const from, const char *expression, const te_variable *variables, int var_count) {
@@ -733,7 +766,9 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
                 strncpy(draw_data.status_text.str, verif_text, sizeof(draw_data.status_text.str) - 1);
                 draw_data.status_text.font = get_font_face(VERIF_FONT);
                 draw_data.status_text.color = verif16;
+                draw_data.status_text.outline_color = verifoutline16;
                 draw_data.status_text.size = verif_size;
+                draw_data.status_text.outline_width = verifoutlinewidth;
                 draw_data.status_text.align = verif_align;
                 break;
             case STATE_AUTH_LOCK:
@@ -741,7 +776,9 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
                 strncpy(draw_data.status_text.str, lock_text, sizeof(draw_data.status_text.str) - 1);
                 draw_data.status_text.font = get_font_face(VERIF_FONT);
                 draw_data.status_text.color = verif16;
+                draw_data.status_text.outline_color = verifoutline16;
                 draw_data.status_text.size = verif_size;
+                draw_data.status_text.outline_width = verifoutlinewidth;
                 draw_data.status_text.align = verif_align;
                 break;
             case STATE_AUTH_WRONG:
@@ -749,7 +786,9 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
                 strncpy(draw_data.status_text.str, wrong_text, sizeof(draw_data.status_text.str) - 1);
                 draw_data.status_text.font = get_font_face(WRONG_FONT);
                 draw_data.status_text.color = wrong16;
+                draw_data.status_text.outline_color = wrongoutline16;
                 draw_data.status_text.size = wrong_size;
+                draw_data.status_text.outline_width = wrongoutlinewidth;
                 draw_data.status_text.align = wrong_align;
                 break;
             case STATE_I3LOCK_LOCK_FAILED:
@@ -757,7 +796,9 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
                 strncpy(draw_data.status_text.str, lock_failed_text, sizeof(draw_data.status_text.str) - 1);
                 draw_data.status_text.font = get_font_face(WRONG_FONT);
                 draw_data.status_text.color = wrong16;
+                draw_data.status_text.outline_color = wrongoutline16;
                 draw_data.status_text.size = wrong_size;
+                draw_data.status_text.outline_width = wrongoutlinewidth;
                 draw_data.status_text.align = wrong_align;
                 break;
             default:
@@ -766,7 +807,9 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
                     strncpy(draw_data.status_text.str, noinput_text, sizeof(draw_data.status_text.str) - 1);
                     draw_data.status_text.font = get_font_face(WRONG_FONT);
                     draw_data.status_text.color = wrong16;
+                    draw_data.status_text.outline_color = wrongoutline16;
                     draw_data.status_text.size = wrong_size;
+                    draw_data.status_text.outline_width = wrongoutlinewidth;
                     draw_data.status_text.align = wrong_align;
                     break;
                 }
@@ -774,7 +817,9 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
                     draw_data.status_text.show = true;
                     draw_data.status_text.font = get_font_face(WRONG_FONT);
                     draw_data.status_text.color = wrong16;
+                    draw_data.status_text.outline_color = wrongoutline16;
                     draw_data.status_text.size = wrong_size;
+                    draw_data.status_text.outline_width = wrongoutlinewidth;
                     draw_data.status_text.align = wrong_align;
                     // TODO: variable for this
                     draw_data.status_text.size = 32.0;
@@ -792,17 +837,21 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
         draw_data.mod_text.show = true;
         strncpy(draw_data.mod_text.str, modifier_string, sizeof(draw_data.mod_text.str) - 1);
         draw_data.mod_text.size = modifier_size;
+        draw_data.mod_text.outline_width = modifieroutlinewidth;
         draw_data.mod_text.font = get_font_face(WRONG_FONT);
         draw_data.mod_text.align = modif_align;
         draw_data.mod_text.color = wrong16;
+        draw_data.mod_text.outline_color = wrongoutline16;
     }
 
     if (layout_text) {
         draw_data.keylayout_text.show = true;
         strncpy(draw_data.keylayout_text.str, layout_text, sizeof(draw_data.keylayout_text.str) - 1);
         draw_data.keylayout_text.size = layout_size;
+        draw_data.keylayout_text.outline_width = layoutoutlinewidth;
         draw_data.keylayout_text.font = get_font_face(LAYOUT_FONT);
         draw_data.keylayout_text.color = layout16;
+        draw_data.keylayout_text.outline_color = layoutoutline16;
         draw_data.keylayout_text.align = layout_align;
     }
 
@@ -810,8 +859,10 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
         draw_data.greeter_text.show = true;
         strncpy(draw_data.greeter_text.str, greeter_text, sizeof(draw_data.greeter_text.str) - 1);
         draw_data.greeter_text.size = greeter_size;
+        draw_data.greeter_text.outline_width = greeteroutlinewidth;
         draw_data.greeter_text.font = get_font_face(GREETER_FONT);
         draw_data.greeter_text.color = greeter16;
+        draw_data.greeter_text.outline_color = greeteroutline16;
         draw_data.greeter_text.align = greeter_align;
     }
 
@@ -825,7 +876,9 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
         if (*draw_data.time_text.str) {
             draw_data.time_text.show = true;
             draw_data.time_text.size = time_size;
+            draw_data.time_text.outline_width = timeoutlinewidth;
             draw_data.time_text.color = time16;
+            draw_data.time_text.outline_color = timeoutline16;
             draw_data.time_text.font = get_font_face(TIME_FONT);
             draw_data.time_text.align = time_align;
         }
@@ -833,7 +886,9 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
         if (*draw_data.date_text.str) {
             draw_data.date_text.show = true;
             draw_data.date_text.size = date_size;
+            draw_data.date_text.outline_width = dateoutlinewidth;
             draw_data.date_text.color = date16;
+            draw_data.date_text.outline_color = dateoutline16;
             draw_data.date_text.font = get_font_face(DATE_FONT);
             draw_data.date_text.align = date_align;
         }
@@ -841,7 +896,9 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
         if (*draw_data.greeter_text.str) {
             draw_data.greeter_text.show = true;
             draw_data.greeter_text.size = greeter_size;
+            draw_data.greeter_text.outline_width = greeteroutlinewidth;
             draw_data.greeter_text.color = greeter16;
+            draw_data.greeter_text.outline_color = greeteroutline16;
             draw_data.greeter_text.font = get_font_face(GREETER_FONT);
             draw_data.greeter_text.align = greeter_align;
         }
