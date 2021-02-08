@@ -58,7 +58,7 @@ You can also specify additional options, as detailed in the manpage. This includ
 	- An experimental thread for driving the redraw ticks, so that things like the bar/clock still update when PAM is blocking
 
 ###Additionally on top of i3lock-color:
-- i3lock will reload the image when receiving SIG1
+- i3lock will reload the image when receiving SIG1 (simply ported the work from [RedFlames](https://github.com/RedFlames/i3lock-SIGUSR1-reload) )
   - I've used this as a gross workaround to using i3lock as a picture slideshow, with a separate script putting a different file in the image path
   - e.g. the included `random_screensaver.sh` 
 
