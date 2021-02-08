@@ -35,6 +35,7 @@
 #endif
 #include <getopt.h>
 #include <string.h>
+#include <signal.h>
 #include <ev.h>
 #include <sys/mman.h>
 #include <xkbcommon/xkbcommon.h>
@@ -1402,11 +1403,21 @@ static void load_slideshow_images(const char *path, char *image_raw_format) {
     closedir(d);
 }
 
+char *image_path = NULL;
+char *image_raw_format = NULL;
+
+void sig_handler(int signum)
+{
+  if(img != NULL) cairo_surface_destroy(img);  
+ //  if(img != NULL) free(img);
+   img = load_image(image_path, image_raw_format);
+
+   redraw_screen();
+}
+
 int main(int argc, char *argv[]) {
     struct passwd *pw;
     char *username;
-    char *image_path = NULL;
-    char *image_raw_format = NULL;
 #ifndef __OpenBSD__
     int ret;
     struct pam_conv conv = {conv_callback, NULL};
@@ -2299,11 +2310,13 @@ int main(int argc, char *argv[]) {
             load_slideshow_images(image_path, image_raw_format);
         }
 
-        free(image_path);
+        //free(image_path);
     }
 
-    free(image_raw_format);
-
+    //free(image_raw_format);
+    
+    signal(SIGUSR1, sig_handler);
+   
     xcb_pixmap_t* blur_pixmap = NULL;
     if (blur) {
         blur_pixmap = malloc(sizeof(xcb_pixmap_t));
