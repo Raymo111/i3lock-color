@@ -1,4 +1,5 @@
 #!/bin/bash
+# grab a random picture from unsplash and process for betterlockscreen
 
 mkdir -p /var/tmp/backgrounds
 XSAVER=`pgrep xscreensaver`
