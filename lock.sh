@@ -37,7 +37,7 @@ V='#bb00bbbb'  # verifying
 
 # --veriftext="Drinking verification can..."
 # --wrongtext="Nope!"
-# --textsize=20
+# --timesize=20
 # --modsize=10
 # --timefont=comic-sans
 # --datefont=monofur
