@@ -232,7 +232,9 @@ extern int bar_count;
 extern int bar_orientation;
 
 extern char bar_base_color[9];
-extern char bar_expr[32];
+extern char bar_x_expr[32];
+extern char bar_y_expr[32];
+extern char bar_width_expr[32];
 extern bool bar_bidirectional;
 extern bool bar_reversed;
 
@@ -355,7 +357,7 @@ static void draw_single_bar(cairo_t *ctx, double pos, double offset, double widt
     cairo_fill(ctx);
 }
 
-static void draw_bar(cairo_t *ctx, double bar_offset, double screen_x, double screen_y, double screen_w, double screen_h) {
+static void draw_bar(cairo_t *ctx, double bar_x, double bar_y, double bar_width, double screen_x, double screen_y) {
 
     cairo_save(ctx);
 
@@ -374,9 +376,9 @@ static void draw_bar(cairo_t *ctx, double bar_offset, double screen_x, double sc
     }
 
     if (bar_orientation == BAR_VERT)
-        draw_single_bar(ctx, screen_y, bar_offset, screen_h, bar_base_height);
+        draw_single_bar(ctx, bar_y, bar_x, bar_width, bar_base_height);
     else
-        draw_single_bar(ctx, screen_x, bar_offset, screen_w, bar_base_height);
+        draw_single_bar(ctx, bar_x, bar_y, bar_width, bar_base_height);
 
     if (unlock_state == STATE_BACKSPACE_ACTIVE)
         cairo_set_source_rgba(ctx, bshl16.red, bshl16.green, bshl16.blue, bshl16.alpha);
@@ -385,20 +387,21 @@ static void draw_bar(cairo_t *ctx, double bar_offset, double screen_x, double sc
 
     cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
 
-    double bar_width, screen_pos;
+    double base_width = bar_width / bar_count;
+    double bar_pos, bar_offset;
     if (bar_orientation == BAR_VERT) {
-        bar_width = screen_h / bar_count;
-        screen_pos = screen_y;
+        bar_pos = bar_y;
+        bar_offset = bar_x;
     } else {
-        bar_width = screen_w / bar_count;
-        screen_pos = screen_x;
+        bar_pos = bar_x;
+        bar_offset = bar_y;
     }
 
     for (int i = 0; i < bar_count; ++i) {
         double bar_height = bar_heights[i];
         if (bar_bidirectional) bar_height *= 2;
         if (bar_height > 0) {
-            draw_single_bar(ctx, screen_pos + i * bar_width, bar_offset, bar_width, bar_height);
+            draw_single_bar(ctx, bar_pos + i * base_width, bar_offset, base_width, bar_height);
         }
     }
 
@@ -637,7 +640,7 @@ static void draw_elements(cairo_t *const ctx, DrawData const *const draw_data) {
                     break;
             }
         }
-        draw_bar(ctx, draw_data->bar_offset, draw_data->screen_x, draw_data->screen_y, draw_data->screen_w, draw_data->screen_h);
+        draw_bar(ctx, draw_data->bar_x, draw_data->bar_y, draw_data->bar_width, draw_data->screen_x, draw_data->screen_y);
     }
 
     draw_text(ctx, draw_data->status_text);
@@ -879,6 +882,9 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
          {"ty", &draw_data.time_text.y},
          {"dx", &draw_data.date_text.x},
          {"dy", &draw_data.date_text.y},
+         {"bw", &draw_data.bar_width},
+         {"bx", &draw_data.bar_x},
+         {"by", &draw_data.bar_y},
          {"r", &radius}};
 
     te_expr *te_ind_x_expr = compile_expression("--indpos", ind_x_expr, vars, vars_size);
@@ -897,7 +903,9 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
     te_expr *te_wrong_y_expr = compile_expression("--wrongpos", wrong_y_expr, vars, vars_size);
     te_expr *te_modif_x_expr = compile_expression("--modifpos", modif_x_expr, vars, vars_size);
     te_expr *te_modif_y_expr = compile_expression("--modifpos", modif_y_expr, vars, vars_size);
-    te_expr *te_bar_expr = compile_expression("--bar-position", bar_expr, vars, vars_size);
+    te_expr *te_bar_x_expr = compile_expression("--bar-position", bar_x_expr, vars, vars_size);
+    te_expr *te_bar_y_expr = strlen(bar_y_expr) ? compile_expression("--bar-position", bar_y_expr, vars, vars_size) : NULL;
+    te_expr *te_bar_width_expr = strlen(bar_width_expr) ? compile_expression("--bar-width", bar_width_expr, vars, vars_size) : NULL;
 
     te_expr *te_greeter_x_expr = compile_expression("--greeterpos", greeter_x_expr, vars, vars_size);
     te_expr *te_greeter_y_expr = compile_expression("--greeterpos", greeter_y_expr, vars, vars_size);
@@ -925,18 +933,10 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
             height = xr_resolutions[current_screen].height / scaling_factor;
             screen_x = xr_resolutions[current_screen].x / scaling_factor;
             screen_y = xr_resolutions[current_screen].y / scaling_factor;
-            draw_data.screen_w = width;
-            draw_data.screen_h = height;
             draw_data.screen_x = screen_x;
             draw_data.screen_y = screen_y;
-            if (te_ind_x_expr && te_ind_y_expr) {
-                draw_data.indicator_x = te_eval(te_ind_x_expr);
-                draw_data.indicator_y = te_eval(te_ind_y_expr);
-            } else {
-                draw_data.indicator_x = screen_x + width / 2;
-                draw_data.indicator_y = screen_y + height / 2;
-            }
-            draw_data.bar_offset = te_eval(te_bar_expr);
+            draw_data.indicator_x = te_eval(te_ind_x_expr);
+            draw_data.indicator_y = te_eval(te_ind_y_expr);
             draw_data.time_text.x = te_eval(te_time_x_expr);
             draw_data.time_text.y = te_eval(te_time_y_expr);
             draw_data.date_text.x = te_eval(te_date_x_expr);
@@ -966,8 +966,29 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
             draw_data.mod_text.x = te_eval(te_modif_x_expr);
             draw_data.mod_text.y = te_eval(te_modif_y_expr);
 
+            if (te_bar_y_expr) {
+                draw_data.bar_x = te_eval(te_bar_x_expr);
+                draw_data.bar_y = te_eval(te_bar_y_expr);
+            } else {
+                double bar_offset = te_eval(te_bar_x_expr);
+                if (bar_orientation == BAR_VERT) {
+                    draw_data.bar_x = bar_offset;
+                    draw_data.bar_y = screen_y;
+                } else {
+                    draw_data.bar_x = screen_x;
+                    draw_data.bar_y = bar_offset;
+                }
+            }
+            if (te_bar_width_expr)
+                draw_data.bar_width = te_eval(te_bar_width_expr);
+            else if (bar_orientation == BAR_VERT)
+                draw_data.bar_width = height;
+            else
+                draw_data.bar_width = width;
+
+
             DEBUG("Indicator at %fx%f on screen %d\n", draw_data.indicator_x, draw_data.indicator_y, current_screen + 1);
-            DEBUG("Bar at %f on screen %d\n", draw_data.bar_offset, current_screen + 1);
+            DEBUG("Bar at %fx%f with width %f on screen %d\n", draw_data.bar_x, draw_data.bar_y, draw_data.bar_width, current_screen + 1);
             DEBUG("Time at %fx%f on screen %d\n", draw_data.time_text.x, draw_data.time_text.y, current_screen + 1);
             DEBUG("Date at %fx%f on screen %d\n", draw_data.date_text.x, draw_data.date_text.y, current_screen + 1);
             DEBUG("Layout at %fx%f on screen %d\n", draw_data.keylayout_text.x, draw_data.keylayout_text.y, current_screen + 1);
@@ -982,8 +1003,6 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
          * hope for the best. */
         width = last_resolution[0] / scaling_factor;
         height = last_resolution[1] / scaling_factor;
-        draw_data.screen_w = width;
-        draw_data.screen_h = height;
         draw_data.screen_x = 0;
         draw_data.screen_y = 0;
         draw_data.indicator_x = width / 2;
@@ -1016,8 +1035,28 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
         draw_data.mod_text.x = te_eval(te_modif_x_expr);
         draw_data.mod_text.y = te_eval(te_modif_y_expr);
 
+        if (te_bar_y_expr) {
+            draw_data.bar_x = te_eval(te_bar_x_expr);
+            draw_data.bar_y = te_eval(te_bar_y_expr);
+        } else {
+            double bar_offset = te_eval(te_bar_x_expr);
+            if (bar_orientation == BAR_VERT) {
+                draw_data.bar_x = bar_offset;
+                draw_data.bar_y = screen_y;
+            } else {
+                draw_data.bar_x = screen_x;
+                draw_data.bar_y = bar_offset;
+            }
+        }
+        if (te_bar_width_expr)
+            draw_data.bar_width = te_eval(te_bar_width_expr);
+        else if (bar_orientation == BAR_VERT)
+            draw_data.bar_width = height;
+        else
+            draw_data.bar_width = width;
+
         DEBUG("Indicator at %fx%f\n", draw_data.indicator_x, draw_data.indicator_y);
-        DEBUG("Bar at %f\n", draw_data.bar_offset);
+        DEBUG("Bar at %fx%f with width %f\n", draw_data.bar_x, draw_data.bar_y, draw_data.bar_width);
         DEBUG("Time at %fx%f\n", draw_data.time_text.x, draw_data.time_text.y);
         DEBUG("Date at %fx%f\n", draw_data.date_text.x, draw_data.date_text.y);
         DEBUG("Layout at %fx%f\n", draw_data.keylayout_text.x, draw_data.keylayout_text.y);
@@ -1043,7 +1082,9 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
     te_free(te_wrong_y_expr);
     te_free(te_modif_x_expr);
     te_free(te_modif_y_expr);
-    te_free(te_bar_expr);
+    te_free(te_bar_x_expr);
+    te_free(te_bar_y_expr);
+    te_free(te_bar_width_expr);
     te_free(te_greeter_x_expr);
     te_free(te_greeter_y_expr);
 

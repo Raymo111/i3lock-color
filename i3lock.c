@@ -282,7 +282,9 @@ int bar_width = 0;
 int bar_orientation = BAR_FLAT;
 
 char bar_base_color[9] = "000000ff";
-char bar_expr[32] = "0\0";
+char bar_x_expr[32] = "0";
+char bar_y_expr[32] = ""; // empty string on y means use x as offset based on orientation
+char bar_width_expr[32] = ""; // empty string means full width based on bar orientation
 bool bar_bidirectional = false;
 bool bar_reversed = false;
 
@@ -1548,6 +1550,7 @@ int main(int argc, char *argv[]) {
         {"bar-periodic-step", required_argument, NULL, 708},
         {"bar-position", required_argument, NULL, 709},
         {"bar-count", required_argument, NULL, 710},
+        {"bar-width1", required_argument, NULL, 711},
 
         // misc.
         {"redraw-thread", no_argument, NULL, 900},
@@ -2125,20 +2128,21 @@ int main(int argc, char *argv[]) {
                     bar_periodic_step = opt;
                 break;
             case 709:
-                //read in to ind_x_expr and ind_y_expr
-                if (strlen(optarg) > 31) {
-                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                    errx(1, "indicator position string can be at most 31 characters\n");
-                }
                 arg = optarg;
-                if (sscanf(arg, "%31s", bar_expr) != 1) {
-                    errx(1, "bar-position must be of the form [pos] with a max length of 31\n");
+                if (sscanf(arg, "%31[^:]:%31[^:]", bar_x_expr, bar_y_expr) < 1) {
+                    errx(1, "bar-position must be a single number or of the form x:y with a max length of 31\n");
                 }
                 break;
             case 710:
                 bar_count = atoi(optarg);
                 if (bar_count > MAX_BAR_COUNT || bar_count < MIN_BAR_COUNT) {
                     errx(1, "bar-count must be between %d and %d\n", MIN_BAR_COUNT, MAX_BAR_COUNT);
+                }
+                break;
+            case 711:
+                arg = optarg;
+                if (sscanf(arg, "%31s", bar_width_expr) != 1) {
+                    errx(1, "bar-width missing\n");
                 }
                 break;
 

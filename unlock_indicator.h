@@ -34,8 +34,8 @@ typedef struct {
 
     double indicator_x, indicator_y;
 
-    double screen_x, screen_y, screen_w, screen_h;
-    double bar_offset;
+    double screen_x, screen_y;
+    double bar_x, bar_y, bar_width;
 } DrawData;
 
 void render_lock(uint32_t* resolution, xcb_drawable_t drawable);
