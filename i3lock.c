@@ -2142,7 +2142,7 @@ int main(int argc, char *argv[]) {
             case 711:
                 arg = optarg;
                 if (sscanf(arg, "%31s", bar_width_expr) != 1) {
-                    errx(1, "bar-width missing\n");
+                    errx(1, "bar-total-width missing\n");
                 }
                 break;
 
