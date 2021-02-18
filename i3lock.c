@@ -1550,7 +1550,7 @@ int main(int argc, char *argv[]) {
         {"bar-periodic-step", required_argument, NULL, 708},
         {"bar-position", required_argument, NULL, 709},
         {"bar-count", required_argument, NULL, 710},
-        {"bar-width1", required_argument, NULL, 711},
+        {"bar-total-width", required_argument, NULL, 711},
 
         // misc.
         {"redraw-thread", no_argument, NULL, 900},

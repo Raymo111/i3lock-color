@@ -437,12 +437,17 @@ The value by which the bars decrease each time the screen is redrawn.
 
 .TP
 .B \-\-bar\-position
-Works similarly to the time/date/indicator expressions. If the bar is horizontal, this sets the vertical offset from the top edge.
-If it's vertically oriented, this sets the horizontal offset from the left edge.
+Works similarly to the time/date/indicator expressions. If only one number is provided, this sets
+the vertical offset from the top or left edge. If two numbers are provided in the form of x:y, sets
+the starting position of the bar.
 
 .TP
-.B \-\-bar\-count=10
+.B \-\-bar\-count
 Sets the number of minibars to draw on each screen.
+
+.TP
+.B \-\-bar\-total\-width
+The total width of the bar. Can be an expression.
 
 .TP
 .B \-\-no\-verify
