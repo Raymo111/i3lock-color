@@ -34,4 +34,3 @@ i3lock \
 --time-str="%H:%M:%S"  \
 --date-str="%A, %m %Y" \
 --keylayout 1         \
-
