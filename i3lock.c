@@ -279,7 +279,7 @@ double bar_step = 15;
 double bar_base_height = 25;
 double bar_periodic_step = 15;
 double max_bar_height = 25;
-int bar_count = 0;
+int bar_count = 10;
 int bar_orientation = BAR_FLAT;
 
 char bar_base_color[9] = "000000ff";
