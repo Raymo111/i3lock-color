@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# bash completion for i3lock-color
+
+_i3lock() {
+ 	local cur="${COMP_WORDS[COMP_CWORD]}"
+	local last="${COMP_WORDS[COMP_CWORD - 1]}"
+  local -a options=(
+  "--version -v"
+  "--nofork -n"
+  "--beep -b"
+  "--no-unlock-indicator -u"
+  "--image -i"
+  "--raw"
+  "--color -c"
+  "--tiling -t"
+  "--centered -C"
+  "--pointer -p"
+  "--ignore-empty-password -e"
+  "--show-failed-attempts"
+  "--debug"
+
+  # i3lock-color OPTIONS
+  
+  "--screen -S"
+  "--blur -B"
+  "--clock --force-clocl -k"
+  "--indicator"
+  "--radius"
+  "--ring-width"
+  # Colors
+  "--inside-color"
+  "--ring-color"
+  "--insidever-color"
+  "--ringver-color"
+  "--insidewrong-color"
+  "--ringwrong-color"
+  "--line-color"
+  "--line-uses-inside"
+  "--line-uses-ring"
+  "--keyhl-color"
+  "--bshl-color"
+  "--separator-color"
+  "--verif-color"
+  "--wrong-color"
+  "--modif-color"
+  "--layout-color"
+  "--time-color"
+  "--date-color"
+  "--greeter-color"
+  # Text
+  "--time-str"
+  "--date-str"
+  "--verif-text"
+  "--wrong-text"
+  "--keylayout"
+  "--noinput-text"
+  "--lock-text"
+  "--lockfailed-text"
+  "--greeter-text"
+  "--no-modkey-text"
+  # Align
+  "--time-align --date-align --layout-align --verif-align --wrong-algin --modif-align --greeter-align"
+  # Outline
+  "--timeoutlinecolor --dateoutlinecolor --layoutoutlinecolor --verifoutlinecolor --wrongoutlinecolor --modifoutline-color --greeteroutlinecolor"
+  # Fonts
+  "--time-font --date-font --layout-font --verif-font --wrong-font --greeter-font"
+  # Size
+  "--timesize --datesize --layoutsize --verifsize --wrongsize --greetersize"
+  # Outline width
+  "--timeoutlinewidth --dateoutlinewidth --layoutoutlinewidth --verifoutlinewidth --wrongoutlinewidth --modifieroutline-width --greeteroutlinewidth"
+  # Position
+  "--ind-pos"
+  "--time-pos"
+  "--date-pos"
+  "--greeter-pos"
+  # Media keys
+  "--pass-media-keys"
+  "--pass-screen-keys"
+  "--pass-power-keys"
+  "--pass-volume-keys"
+  # Bar mode
+  "--bar-indicator"
+  "--bar-direction"
+  "--bar-orientation"
+  "--bar-step"
+  "--bar-max-height"
+  "--bar-base-width"
+  "--bar-color"
+  "--bar-periodic-step"
+  "--bar-pos"
+  "--bar-count"
+  "--bar-total-width"
+  # Extra configs
+  "--redraw-thread"
+  "--refresh-rate"
+  "--composite"
+  "--no-verify"
+  "--slideshow-interval"
+  "--slideshow-random-selection"
+)
+  local args=""
+  for i in "${options[@]}"; do
+    args+="$i "
+  done
+  COMPREPLY=( $(compgen -W "${args}" -- ${cur}) )
+
+}
+
+complete -F _i3lock i3lock
