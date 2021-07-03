@@ -3,7 +3,7 @@
  *
  * © 2010 Michael Stapelberg
  * © 2015 Cassandra Fox
- * © 2020 Raymond Li
+ * © 2021 Raymond Li
  *
  * See LICENSE for licensing information
  *
@@ -71,7 +71,7 @@
 typedef void (*ev_callback_t)(EV_P_ ev_timer *w, int revents);
 static void input_done(void);
 
-char color[9] = "ffffffff";
+char color[9] = "a3a3a3ff";
 
 /* options for unlock indicator colors */
 char insidevercolor[9] = "006effbf";
@@ -86,6 +86,7 @@ char wrongcolor[9] = "000000ff";
 char layoutcolor[9] = "000000ff";
 char timecolor[9] = "000000ff";
 char datecolor[9] = "000000ff";
+char modifcolor[9] = "000000ff";
 char keyhlcolor[9] = "33db00ff";
 char bshlcolor[9] = "db3300ff";
 char separatorcolor[9] = "000000ff";
@@ -97,6 +98,7 @@ char layoutoutlinecolor[9] = "00000000";
 char timeoutlinecolor[9] = "00000000";
 char dateoutlinecolor[9] = "00000000";
 char greeteroutlinecolor[9] = "00000000";
+char modifoutlinecolor[9] = "00000000";
 
 /* int defining which display the lock indicator should be shown on. If -1, then show on all displays.*/
 int screen_number = 0;
@@ -242,14 +244,14 @@ static uint8_t xkb_base_error;
 static int randr_base = -1;
 
 cairo_surface_t *img = NULL;
-cairo_surface_t *blur_img = NULL;
 cairo_surface_t *img_slideshow[256];
+cairo_surface_t *blur_bg_img = NULL;
 int slideshow_image_count = 0;
 int slideshow_interval = 10;
 bool slideshow_random_selection = false;
 
-bool tile = false;
-bool centered = false;
+background_type_t bg_type = NONE;
+
 bool ignore_empty_password = false;
 bool skip_repeated_empty_password = false;
 bool pass_media_keys = false;
@@ -263,24 +265,28 @@ pthread_t draw_thread;
 // allow you to disable. handy if you use bar with lots of crap.
 bool redraw_thread = false;
 
+// experimental bar stuff
 #define BAR_VERT 0
 #define BAR_FLAT 1
 #define BAR_DEFAULT 0
 #define BAR_REVERSED 1
 #define BAR_BIDIRECTIONAL 2
-// experimental bar stuff
+#define MAX_BAR_COUNT 65535
+#define MIN_BAR_COUNT 1
+
 bool bar_enabled = false;
 double *bar_heights = NULL;
 double bar_step = 15;
 double bar_base_height = 25;
 double bar_periodic_step = 15;
 double max_bar_height = 25;
-int num_bars = 0;
-int bar_width = 150;
+int bar_count = 10;
 int bar_orientation = BAR_FLAT;
 
 char bar_base_color[9] = "000000ff";
-char bar_expr[32] = "0\0";
+char bar_x_expr[32] = "0";
+char bar_y_expr[32] = ""; // empty string on y means use x as offset based on orientation
+char bar_width_expr[32] = ""; // empty string means full width based on bar orientation
 bool bar_bidirectional = false;
 bool bar_reversed = false;
 
@@ -1439,41 +1445,46 @@ int main(int argc, char *argv[]) {
         {"raw", required_argument, NULL, 998},
         {"tiling", no_argument, NULL, 't'},
         {"centered", no_argument, NULL, 'C'},
+        {"fill", no_argument, NULL, 'F'},
+        {"scale", no_argument, NULL, 'L'},
+        {"max", no_argument, NULL, 'M'},
         {"ignore-empty-password", no_argument, NULL, 'e'},
         {"inactivity-timeout", required_argument, NULL, 'I'},
         {"show-failed-attempts", no_argument, NULL, 'f'},
+        {"screen", required_argument, NULL, 'S'},
+        {"blur", required_argument, NULL, 'B'},
 
         // options for unlock indicator colors
-        {"insidevercolor", required_argument, NULL, 300},
-        {"insidewrongcolor", required_argument, NULL, 301},
-        {"insidecolor", required_argument, NULL, 302},
-        {"ringvercolor", required_argument, NULL, 303},
-        {"ringwrongcolor", required_argument, NULL, 304},
-        {"ringcolor", required_argument, NULL, 305},
-        {"linecolor", required_argument, NULL, 306},
-        {"verifcolor", required_argument, NULL, 307},
-        {"wrongcolor", required_argument, NULL, 308},
-        {"layoutcolor", required_argument, NULL, 309},
-        {"timecolor", required_argument, NULL, 310},
-        {"datecolor", required_argument, NULL, 311},
-        {"keyhlcolor", required_argument, NULL, 312},
-        {"bshlcolor", required_argument, NULL, 313},
-        {"separatorcolor", required_argument, NULL, 314},
-        {"greetercolor", required_argument, NULL, 315},
+        {"insidever-color", required_argument, NULL, 300},
+        {"insidewrong-color", required_argument, NULL, 301},
+        {"inside-color", required_argument, NULL, 302},
+        {"ringver-color", required_argument, NULL, 303},
+        {"ringwrong-color", required_argument, NULL, 304},
+        {"ring-color", required_argument, NULL, 305},
+        {"line-color", required_argument, NULL, 306},
+        {"verif-color", required_argument, NULL, 307},
+        {"wrong-color", required_argument, NULL, 308},
+        {"layout-color", required_argument, NULL, 309},
+        {"time-color", required_argument, NULL, 310},
+        {"date-color", required_argument, NULL, 311},
+        {"modif-color", required_argument, NULL, 322},
+        {"keyhl-color", required_argument, NULL, 312},
+        {"bshl-color", required_argument, NULL, 313},
+        {"separator-color", required_argument, NULL, 314},
+        {"greeter-color", required_argument, NULL, 315},
 
         // text outline colors
-        {"verifoutlinecolor", required_argument, NULL, 316},
-        {"wrongoutlinecolor", required_argument, NULL, 317},
-        {"layoutoutlinecolor", required_argument, NULL, 318},
-        {"timeoutlinecolor", required_argument, NULL, 319},
-        {"dateoutlinecolor", required_argument, NULL, 320},
-        {"greeteroutlinecolor", required_argument, NULL, 321},
+        {"verifoutline-color", required_argument, NULL, 316},
+        {"wrongoutline-color", required_argument, NULL, 317},
+        {"layoutoutline-color", required_argument, NULL, 318},
+        {"timeoutline-color", required_argument, NULL, 319},
+        {"dateoutline-color", required_argument, NULL, 320},
+        {"greeteroutline-color", required_argument, NULL, 321},
+        {"modifoutline-color", required_argument, NULL, 323},
 
         {"line-uses-ring", no_argument, NULL, 'r'},
         {"line-uses-inside", no_argument, NULL, 's'},
 
-        {"screen", required_argument, NULL, 'S'},
-        {"blur", required_argument, NULL, 'B'},
         {"clock", no_argument, NULL, 'k'},
         {"force-clock", no_argument, NULL, 400},
         {"indicator", no_argument, NULL, 401},
@@ -1490,16 +1501,16 @@ int main(int argc, char *argv[]) {
         {"greeter-align", required_argument, NULL, 506},
 
         // string stuff
-        {"timestr", required_argument, NULL, 510},
-        {"datestr", required_argument, NULL, 511},
-        {"veriftext", required_argument, NULL, 512},
-        {"wrongtext", required_argument, NULL, 513},
+        {"time-str", required_argument, NULL, 510},
+        {"date-str", required_argument, NULL, 511},
+        {"verif-text", required_argument, NULL, 512},
+        {"wrong-text", required_argument, NULL, 513},
         {"keylayout", required_argument, NULL, 514},
-        {"noinputtext", required_argument, NULL, 515},
-        {"locktext", required_argument, NULL, 516},
-        {"lockfailedtext", required_argument, NULL, 517},
-        {"greetertext", required_argument, NULL, 518},
-        {"no-modkeytext", no_argument, NULL, 519},
+        {"noinput-text", required_argument, NULL, 515},
+        {"lock-text", required_argument, NULL, 516},
+        {"lockfailed-text", required_argument, NULL, 517},
+        {"greeter-text", required_argument, NULL, 518},
+        {"no-modkey-text", no_argument, NULL, 519},
 
         // fonts
         {"time-font", required_argument, NULL, 520},
@@ -1510,33 +1521,33 @@ int main(int argc, char *argv[]) {
         {"greeter-font", required_argument, NULL, 525},
 
         // text size
-        {"timesize", required_argument, NULL, 530},
-        {"datesize", required_argument, NULL, 531},
-        {"verifsize", required_argument, NULL, 532},
-        {"wrongsize", required_argument, NULL, 533},
-        {"layoutsize", required_argument, NULL, 534},
-        {"modsize", required_argument, NULL, 535},
-        {"greetersize", required_argument, NULL, 536},
+        {"time-size", required_argument, NULL, 530},
+        {"date-size", required_argument, NULL, 531},
+        {"verif-size", required_argument, NULL, 532},
+        {"wrong-size", required_argument, NULL, 533},
+        {"layout-size", required_argument, NULL, 534},
+        {"modif-size", required_argument, NULL, 535},
+        {"greeter-size", required_argument, NULL, 536},
 
         // text/indicator positioning
-        {"timepos", required_argument, NULL, 540},
-        {"datepos", required_argument, NULL, 541},
-        {"verifpos", required_argument, NULL, 542},
-        {"wrongpos", required_argument, NULL, 543},
-        {"layoutpos", required_argument, NULL, 544},
-        {"statuspos", required_argument, NULL, 545},
-        {"modifpos", required_argument, NULL, 546},
-        {"indpos", required_argument, NULL, 547},
-        {"greeterpos", required_argument, NULL, 548},
+        {"time-pos", required_argument, NULL, 540},
+        {"date-pos", required_argument, NULL, 541},
+        {"verif-pos", required_argument, NULL, 542},
+        {"wrong-pos", required_argument, NULL, 543},
+        {"layout-pos", required_argument, NULL, 544},
+        {"status-pos", required_argument, NULL, 545},
+        {"modif-pos", required_argument, NULL, 546},
+        {"ind-pos", required_argument, NULL, 547},
+        {"greeter-pos", required_argument, NULL, 548},
 
         // text outline width
-        {"timeoutlinewidth", required_argument, NULL, 560},
-        {"dateoutlinewidth", required_argument, NULL, 561},
-        {"verifoutlinewidth", required_argument, NULL, 562},
-        {"wrongoutlinewidth", required_argument, NULL, 563},
-        {"modifieroutlinewidth", required_argument, NULL, 564},
-        {"layoutoutlinewidth", required_argument, NULL, 565},
-        {"greeteroutlinewidth", required_argument, NULL, 566},
+        {"timeoutline-width", required_argument, NULL, 560},
+        {"dateoutline-width", required_argument, NULL, 561},
+        {"verifoutline-width", required_argument, NULL, 562},
+        {"wrongoutline-width", required_argument, NULL, 563},
+        {"modifieroutline-width", required_argument, NULL, 564},
+        {"layoutoutline-width", required_argument, NULL, 565},
+        {"greeteroutline-width", required_argument, NULL, 566},
 
 		// pass keys
         {"pass-media-keys", no_argument, NULL, 601},
@@ -1547,14 +1558,15 @@ int main(int argc, char *argv[]) {
         // bar indicator stuff
         {"bar-indicator", no_argument, NULL, 700},
         {"bar-direction", required_argument, NULL, 701},
-        {"bar-width", required_argument, NULL, 702},
         {"bar-orientation", required_argument, NULL, 703},
         {"bar-step", required_argument, NULL, 704},
         {"bar-max-height", required_argument, NULL, 705},
         {"bar-base-width", required_argument, NULL, 706},
         {"bar-color", required_argument, NULL, 707},
         {"bar-periodic-step", required_argument, NULL, 708},
-        {"bar-position", required_argument, NULL, 709},
+        {"bar-pos", required_argument, NULL, 709},
+        {"bar-count", required_argument, NULL, 710},
+        {"bar-total-width", required_argument, NULL, 711},
 
         // misc.
         {"redraw-thread", no_argument, NULL, 900},
@@ -1575,7 +1587,7 @@ int main(int argc, char *argv[]) {
     if (getenv("WAYLAND_DISPLAY") != NULL)
         errx(EXIT_FAILURE, "i3lock is a program for X11 and does not work on Wayland. Try https://github.com/swaywm/swaylock instead");
 
-    char *optstring = "hvnbdc:p:ui:tCeI:frsS:kB:m";
+    char *optstring = "hvnbdc:p:ui:tCFLMeI:frsS:kB:m";
     char *arg = NULL;
     int opt = 0;
     char padded[9] = "ffffffff"; \
@@ -1603,7 +1615,7 @@ int main(int argc, char *argv[]) {
     while ((o = getopt_long(argc, argv, optstring, longopts, &longoptind)) != -1) {
         switch (o) {
             case 'v':
-                errx(EXIT_SUCCESS, "version " I3LOCK_VERSION " © 2010 Michael Stapelberg, © 2015 Cassandra Fox, © 2020 Raymond Li");
+                errx(EXIT_SUCCESS, "version " I3LOCK_VERSION " © 2010 Michael Stapelberg, © 2015 Cassandra Fox, © 2021 Raymond Li");
             case 'n':
                 dont_fork = true;
                 break;
@@ -1624,16 +1636,34 @@ int main(int argc, char *argv[]) {
                 image_path = strdup(optarg);
                 break;
             case 't':
-                if(centered) {
-                    errx(EXIT_FAILURE, "i3lock-color: Options tiling and centered conflict.");
+                if(bg_type != NONE) {
+                    errx(EXIT_FAILURE, "i3lock-color: Only one background type can be used.");
                 }
-                tile = true;
+                bg_type = TILE;
                 break;
             case 'C':
-                if(tile) {
-                    errx(EXIT_FAILURE, "i3lock-color: Options tiling and centered conflict.");
+                if(bg_type != NONE) {
+                    errx(EXIT_FAILURE, "i3lock-color: Only one background type can be used.");
                 }
-                centered = true;
+                bg_type = CENTER;
+                break;
+            case 'F':
+                if(bg_type != NONE) {
+                    errx(EXIT_FAILURE, "i3lock-color: Only one background type can be used.");
+                }
+                bg_type = FILL;
+                break;
+            case 'L':
+                if(bg_type != NONE) {
+                    errx(EXIT_FAILURE, "i3lock-color: Only one background type can be used.");
+                }
+                bg_type = SCALE;
+                break;
+            case 'M':
+                if(bg_type != NONE) {
+                    errx(EXIT_FAILURE, "i3lock-color: Only one background type can be used.");
+                }
+                bg_type = MAX;
                 break;
             case 'p':
                 if (!strcmp(optarg, "win")) {
@@ -1743,6 +1773,12 @@ int main(int argc, char *argv[]) {
                 break;
             case  321:
                 parse_color(greeteroutlinecolor);
+                break;
+            case  322:
+                parse_color(modifcolor);
+                break;
+            case  323:
+                parse_color(modifoutlinecolor);
                 break;
 
 
@@ -2098,11 +2134,6 @@ int main(int argc, char *argv[]) {
                         break;
                 }
                 break;
-            case 702:
-                bar_width = atoi(optarg);
-                if (bar_width < 1) bar_width = 150;
-                // num_bars and bar_heights* initialized later when we grab display info
-                break;
             case 703:
                 arg = optarg;
                 if (strcmp(arg, "vertical") == 0)
@@ -2133,14 +2164,21 @@ int main(int argc, char *argv[]) {
                     bar_periodic_step = opt;
                 break;
             case 709:
-                //read in to ind_x_expr and ind_y_expr
-                if (strlen(optarg) > 31) {
-                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                    errx(1, "indicator position string can be at most 31 characters\n");
-                }
                 arg = optarg;
-                if (sscanf(arg, "%31s", bar_expr) != 1) {
-                    errx(1, "bar-position must be of the form [pos] with a max length of 31\n");
+                if (sscanf(arg, "%31[^:]:%31[^:]", bar_x_expr, bar_y_expr) < 1) {
+                    errx(1, "bar-position must be a single number or of the form x:y with a max length of 31\n");
+                }
+                break;
+            case 710:
+                bar_count = atoi(optarg);
+                if (bar_count > MAX_BAR_COUNT || bar_count < MIN_BAR_COUNT) {
+                    errx(1, "bar-count must be between %d and %d\n", MIN_BAR_COUNT, MAX_BAR_COUNT);
+                }
+                break;
+            case 711:
+                arg = optarg;
+                if (sscanf(arg, "%31s", bar_width_expr) != 1) {
+                    errx(1, "missing argument for bar-total-width\n");
                 }
                 break;
 
@@ -2289,13 +2327,8 @@ int main(int argc, char *argv[]) {
     last_resolution[0] = screen->width_in_pixels;
     last_resolution[1] = screen->height_in_pixels;
 
-    if (bar_enabled && bar_width > 0) {
-        int tmp = screen->width_in_pixels;
-        if (bar_orientation == BAR_VERT) tmp = screen->height_in_pixels;
-        num_bars = tmp / bar_width;
-        if (tmp % bar_width != 0) ++num_bars;
-
-        bar_heights = (double*) calloc(num_bars, sizeof(double));
+    if (bar_enabled) {
+        bar_heights = (double*) calloc(bar_count, sizeof(double));
     }
 
     xcb_change_window_attributes(conn, screen->root, XCB_CW_EVENT_MASK,
@@ -2313,31 +2346,23 @@ int main(int argc, char *argv[]) {
         //free(image_path);
     }
 
-    //free(image_raw_format);
-    
     signal(SIGUSR1, sig_handler);
    
     xcb_pixmap_t* blur_pixmap = NULL;
     if (blur) {
-        blur_pixmap = malloc(sizeof(xcb_pixmap_t));
-        xcb_visualtype_t *vistype = get_root_visual_type(screen);
-        *blur_pixmap = capture_bg_pixmap(conn, screen, last_resolution);
-        cairo_surface_t *xcb_img = cairo_xcb_surface_create(conn, *blur_pixmap, vistype, last_resolution[0], last_resolution[1]);
+        xcb_pixmap_t bg_pixmap = capture_bg_pixmap(conn, screen, last_resolution);
+        cairo_surface_t *xcb_img = cairo_xcb_surface_create(conn, bg_pixmap, get_root_visual_type(screen), last_resolution[0], last_resolution[1]);
 
-        blur_img = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, last_resolution[0], last_resolution[1]);
-        cairo_t *ctx = cairo_create(blur_img);
+        blur_bg_img = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, last_resolution[0], last_resolution[1]);
+        cairo_t *ctx = cairo_create(blur_bg_img);
+
         cairo_set_source_surface(ctx, xcb_img, 0, 0);
         cairo_paint(ctx);
+        blur_image_surface(blur_bg_img, blur_sigma);
 
-        blur_image_surface(blur_img, blur_sigma);
-        if (img) {
-            // Display image centered on all outputs.
-            draw_image(last_resolution, ctx);
-            cairo_surface_destroy(img);
-            img = NULL;
-        }
         cairo_destroy(ctx);
         cairo_surface_destroy(xcb_img);
+        xcb_free_pixmap(conn, bg_pixmap);
     }
 
     xcb_window_t stolen_focus = find_focused_window(conn, screen->root);
@@ -2348,14 +2373,7 @@ int main(int argc, char *argv[]) {
     xcb_pixmap_t pixmap = create_bg_pixmap(conn, win, last_resolution, color);
     render_lock(last_resolution, pixmap);
     xcb_change_window_attributes(conn, win, XCB_CW_BACK_PIXMAP, (uint32_t[]){pixmap});
-
     xcb_free_pixmap(conn, pixmap);
-    if (blur_pixmap) {
-        xcb_free_pixmap(conn, *blur_pixmap);
-        free(blur_pixmap);
-        blur_pixmap = NULL;
-    }
-
 
     cursor = create_cursor(conn, screen, win, curs_choice);
 

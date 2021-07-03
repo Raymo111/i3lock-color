@@ -63,7 +63,7 @@
 # LICENSE
 #
 #   Copyright (c) 2016 Michael Stapelberg <michael@i3wm.org>
-#   Copyright (c) 2020 Raymond Li <i3lock-color@raymond.li>
+#   Copyright (c) 2021 Raymond Li <i3lock-color@raymond.li>
 #
 #   Copying and distribution of this file, with or without modification, are
 #   permitted in any medium without royalty provided the copyright notice
