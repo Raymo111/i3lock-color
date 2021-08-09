@@ -78,6 +78,7 @@ _i3lock() {
   "--pass-screen-keys"
   "--pass-power-keys"
   "--pass-volume-keys"
+  "--special-passthrough"
   # Bar mode
   "--bar-indicator"
   "--bar-direction"
