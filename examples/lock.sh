@@ -1,36 +1,36 @@
 #!/bin/sh
 
-B='#00000000'  # blank
-C='#ffffff22'  # clear ish
-D='#ff00ffcc'  # default
-T='#ee00eeee'  # text
-W='#880000bb'  # wrong
-V='#bb00bbbb'  # verifying
+BLANK='#00000000'
+CLEAR='#ffffff22'
+DEFAULT='#ff00ffcc'
+TEXT='#ee00eeee'
+WRONG='#880000bb'
+VERIFYING='#bb00bbbb'
 
 i3lock \
---insidever-color=$C   \
---ringver-color=$V     \
+--insidever-color=$CLEAR     \
+--ringver-color=$VERIFYING   \
 \
---insidewrong-color=$C \
---ringwrong-color=$W   \
+--insidewrong-color=$CLEAR   \
+--ringwrong-color=$WRONG     \
 \
---inside-color=$B      \
---ring-color=$D        \
---line-color=$B        \
---separator-color=$D   \
+--inside-color=$BLANK        \
+--ring-color=$DEFAULT        \
+--line-color=$BLANK          \
+--separator-color=$DEFAULT   \
 \
---verif-color=$T        \
---wrong-color=$T        \
---time-color=$T        \
---date-color=$T        \
---layout-color=$T      \
---keyhl-color=$W       \
---bshl-color=$W        \
+--verif-color=$TEXT          \
+--wrong-color=$TEXT          \
+--time-color=$TEXT           \
+--date-color=$TEXT           \
+--layout-color=$TEXT         \
+--keyhl-color=$WRONG         \
+--bshl-color=$WRONG          \
 \
---screen 1            \
---blur 5              \
---clock               \
---indicator           \
---time-str="%H:%M:%S"  \
---date-str="%A, %m %Y" \
---keylayout 1         \
+--screen 1                   \
+--blur 5                     \
+--clock                      \
+--indicator                  \
+--time-str="%H:%M:%S"        \
+--date-str="%A, %m %Y"       \
+--keylayout 1                \
