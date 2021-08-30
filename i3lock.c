@@ -28,6 +28,7 @@
 #include <err.h>
 #include <errno.h>
 #include <assert.h>
+#include "api.h"
 #ifdef __OpenBSD__
 #include <bsd_auth.h>
 #else
@@ -266,6 +267,13 @@ pthread_t draw_thread;
 // main thread still sometimes calls redraw()
 // allow you to disable. handy if you use bar with lots of crap.
 bool redraw_thread = false;
+pthread_mutex_t redraw_mutex;
+
+// for the api thread
+pthread_t api_thread;
+// this enables api access to update i3lock
+bool api_enabled = false;
+char *api_fifo_path = "/tmp/i3lock-api";
 
 // experimental bar stuff
 #define BAR_VERT 0
@@ -1368,7 +1376,7 @@ static void raise_loop(xcb_window_t window) {
 /*
  * Loads an image from the given path. Handles JPEG and PNG. Returns NULL in case of error.
  */
-static cairo_surface_t* load_image(char* image_path, char* image_raw_format) {
+cairo_surface_t* load_image(char* image_path, char* image_raw_format) {
     cairo_surface_t *img = NULL;
     JPEG_INFO jpg_info;
 
@@ -1592,6 +1600,7 @@ int main(int argc, char *argv[]) {
         {"refresh-rate", required_argument, NULL, 901},
         {"composite", no_argument, NULL, 902},
         {"no-verify", no_argument, NULL, 905},
+        {"enable-api", optional_argument, NULL, 906},
 
         // slideshow options
         {"slideshow-interval", required_argument, NULL, 903},
@@ -2232,6 +2241,19 @@ int main(int argc, char *argv[]) {
             case 905:
                 no_verify = true;
                 break;
+            case 906:
+                api_enabled = true;
+                if (optarg == NULL && argv[optind] != NULL &&
+                        argv[optind][0] != '-') {
+                    if (argv[optind][0] != ' ' && argv[optind][0] != '\0')
+                        api_fifo_path = strdup(argv[optind]);
+                    ++optind;
+                } else {
+                    if (optarg != NULL) {
+                        api_fifo_path = strdup(optarg);
+                    }
+                }
+                break;
             case 998:
                 image_raw_format = strdup(optarg);
                 break;
@@ -2463,7 +2485,9 @@ int main(int argc, char *argv[]) {
      * file descriptor becomes readable). */
     ev_invoke(main_loop, xcb_check, 0);
 
-    if (show_clock || bar_enabled || slideshow_enabled) {
+    pthread_mutex_init(&redraw_mutex, NULL);
+
+    if (show_clock || bar_enabled || slideshow_enabled || api_enabled) {
         if (redraw_thread) {
             struct timespec ts;
             double s;
@@ -2474,6 +2498,9 @@ int main(int argc, char *argv[]) {
         } else {
             start_time_redraw_tick(main_loop);
         }
+    }
+    if (api_enabled) {
+        (void) pthread_create(&api_thread, NULL, listen_api, NULL);
     }
     ev_loop(main_loop, 0);
 
@@ -2493,6 +2520,7 @@ int main(int argc, char *argv[]) {
     xcb_destroy_window(conn, win);
     set_focused_window(conn, screen->root, stolen_focus);
     xcb_aux_sync(conn);
+    remove(api_fifo_path);
 
     return 0;
 }

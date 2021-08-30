@@ -8,6 +8,7 @@
  * See LICENSE for licensing information
  *
  */
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -1163,11 +1164,16 @@ void draw_image(uint32_t* root_resolution, cairo_surface_t *img, cairo_t* xcb_ct
     cairo_pattern_destroy(pattern);
 }
 
+extern pthread_mutex_t redraw_mutex;
+
 /*
  * Calls render_lock on a new pixmap and swaps that with the current pixmap
  *
  */
 void redraw_screen(void) {
+    pthread_mutex_lock(&redraw_mutex);
+    DEBUG("Thread locked\n");
+
     DEBUG("redraw_screen(unlock_state = %d, auth_state = %d) @ [%lu]\n", unlock_state, auth_state, (unsigned long)time(NULL));
     xcb_pixmap_t pixmap = create_bg_pixmap(conn, win, last_resolution, color);
     render_lock(last_resolution, pixmap);
@@ -1175,6 +1181,9 @@ void redraw_screen(void) {
     xcb_clear_area(conn, 0, win, 0, 0, last_resolution[0], last_resolution[1]);
     xcb_free_pixmap(conn, pixmap);
     xcb_flush(conn);
+
+    DEBUG("Thread unlocked\n");
+    pthread_mutex_unlock(&redraw_mutex);
 }
 
 /*

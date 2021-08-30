@@ -63,7 +63,9 @@ i3lock_SOURCES = \
 	unlock_indicator.c \
 	unlock_indicator.h \
 	xcb.c \
-	xcb.h
+	xcb.h \
+	api.c \
+	api.h
 
 EXTRA_DIST = \
 	$(pamd_files) \

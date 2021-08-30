@@ -2,6 +2,7 @@
 #define _I3LOCK_H
 
 // boy i sure hope this doesnt change in the future
+#include <cairo/cairo.h>
 #define NANOSECONDS_IN_SECOND 1000000000
 
 /* This macro will only print debug output when started with --debug.
@@ -14,5 +15,7 @@
              fprintf(stderr, "[i3lock-debug] " fmt, ##__VA_ARGS__); \
          }                                                          \
     } while (0)
+
+cairo_surface_t* load_image(char* image_path, char* image_raw_format);
 
 #endif
