@@ -250,6 +250,14 @@ static cairo_font_face_t *font_faces[6] = {
     NULL,
 };
 
+static control_char_config_t control_characters[] = {
+    {'\n', CC_POS_RESET, 0, CC_POS_CHANGE, 1},
+    {'\b', CC_POS_CHANGE, -1, CC_POS_KEEP, 0},
+    {'\r', CC_POS_RESET, 0, CC_POS_KEEP, 0},
+    {'\t', CC_POS_TAB, 8, CC_POS_KEEP, 0},
+};
+size_t control_char_count = sizeof control_characters / sizeof(control_char_config_t);
+
 static cairo_font_face_t *get_font_face(int which) {
     if (font_faces[which]) {
         return font_faces[which];
@@ -322,6 +330,9 @@ static void draw_text_with_cc(cairo_t *ctx, text_t text, double start_x) {
     opts = cairo_font_options_create();
     sft = cairo_scaled_font_create(text.font, &fm, &ctm, opts);
     cairo_font_options_destroy(opts);
+    /* use `a` to represent common character width, using in `\t`  */
+    cairo_text_extents_t te;
+    cairo_text_extents(ctx, "a", &te);
 
     // convert text to glyphs.
     cairo_status_t status;
@@ -332,22 +343,13 @@ static void draw_text_with_cc(cairo_t *ctx, text_t text, double start_x) {
         lineno = 0,
         x = start_x,
         y = text.y;
-    const char CC_POS_RESET = 0;
-    const char CC_POS_CHANGE = 1;
-    const char CC_POS_KEEP = 2;
-    char cc_configs[][5] = {
-        {'\n', CC_POS_RESET, 0, CC_POS_CHANGE, 1},
-        {'\b', CC_POS_CHANGE, -1, CC_POS_KEEP, 0},
-        {'\r', CC_POS_RESET, 0, CC_POS_KEEP, 0}
-    };
-    size_t cc_count = 3;
     size_t cur_cc;
 
     while (text.str[start + len] != '\0') {
         char is_cc = 0;
         do {
-            for (cur_cc = 0; cur_cc < cc_count; cur_cc++) {
-                if (text.str[start+len] == cc_configs[cur_cc][0]) {
+            for (cur_cc = 0; cur_cc < control_char_count; cur_cc++) {
+                if (text.str[start+len] == control_characters[cur_cc].character) {
                     is_cc = 1;
                     break;
                 }
@@ -365,17 +367,22 @@ static void draw_text_with_cc(cairo_t *ctx, text_t text, double start_x) {
                 DEBUG("draw %c failed\n", text.str[start]);
             }
         }
-        if (is_cc && (cur_cc < cc_count)) {
-            if (cc_configs[cur_cc][1] == CC_POS_CHANGE) {
-                char x_offset = cc_configs[cur_cc][2];
+        if (is_cc && (cur_cc < control_char_count)) {
+            if (control_characters[cur_cc].x_behavior == CC_POS_CHANGE) {
+                char x_offset = control_characters[cur_cc].x_behavior_arg;
                 if (x_offset < 0 && x_offset > -nglyphs) {
                     x = glyphs[nglyphs+x_offset].x;
+                } else if (x_offset > 0) {
+                    x = glyphs[nglyphs - 1].x + x_offset * te.x_advance;
                 }
-            }  else if (cc_configs[cur_cc][1] == CC_POS_RESET) {
+            } else if (control_characters[cur_cc].x_behavior == CC_POS_RESET) {
                 x = start_x;
+            } else if (control_characters[cur_cc].x_behavior == CC_POS_TAB) {
+                int advance = control_characters[cur_cc].x_behavior_arg - ((nglyphs - 1) % control_characters[cur_cc].x_behavior_arg);
+                x = glyphs[nglyphs - 1].x + advance * te.x_advance;
             }
-            if (cc_configs[cur_cc][3] == CC_POS_CHANGE) {
-                lineno += cc_configs[cur_cc][4];
+            if (control_characters[cur_cc].y_behavior == CC_POS_CHANGE) {
+                lineno += control_characters[cur_cc].y_behavior_arg;
             } // CC_POS_KEEP is default for y
         }
         y = text.y + text.size * lineno;
