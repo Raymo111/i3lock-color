@@ -309,6 +309,85 @@ static cairo_font_face_t *get_font_face(int which) {
 }
 
 /*
+ * Splits the given text by "control chars",
+ * And then draws the given text onto the cairo context.
+ */
+static void draw_text_with_cc(cairo_t *ctx, text_t text, double start_x) {
+    // get scaled_font
+    cairo_scaled_font_t *sft;
+    cairo_matrix_t fm, ctm;
+    cairo_matrix_init_scale(&fm, text.size, text.size);
+    cairo_get_matrix(ctx, &ctm);
+    cairo_font_options_t *opts;
+    opts = cairo_font_options_create();
+    sft = cairo_scaled_font_create(text.font, &fm, &ctm, opts);
+    cairo_font_options_destroy(opts);
+
+    // convert text to glyphs.
+    cairo_status_t status;
+    cairo_glyph_t* glyphs;
+    int nglyphs = 0,
+        len = 0,
+        start = 0,
+        lineno = 0,
+        x = start_x,
+        y = text.y;
+    const char CC_POS_RESET = 0;
+    const char CC_POS_CHANGE = 1;
+    const char CC_POS_KEEP = 2;
+    char cc_configs[][5] = {
+        {'\n', CC_POS_RESET, 0, CC_POS_CHANGE, 1},
+        {'\b', CC_POS_CHANGE, -1, CC_POS_KEEP, 0},
+        {'\r', CC_POS_RESET, 0, CC_POS_KEEP, 0}
+    };
+    size_t cc_count = 3;
+    size_t cur_cc;
+
+    while (text.str[start + len] != '\0') {
+        char is_cc = 0;
+        do {
+            for (cur_cc = 0; cur_cc < cc_count; cur_cc++) {
+                if (text.str[start+len] == cc_configs[cur_cc][0]) {
+                    is_cc = 1;
+                    break;
+                }
+            }
+        } while (text.str[start+(len++)] != '\0' && !is_cc);
+        if (len > is_cc) {
+            status = cairo_scaled_font_text_to_glyphs(
+                sft, x, y, text.str + start, is_cc ? len - 1: len,
+                &glyphs, &nglyphs,
+                NULL, NULL, NULL
+            );
+            if (status == CAIRO_STATUS_SUCCESS) {
+                cairo_glyph_path(ctx, glyphs, nglyphs);
+            } else {
+                DEBUG("draw %c failed\n", text.str[start]);
+            }
+        }
+        if (is_cc && cur_cc < cc_count) {
+            if (cc_configs[cur_cc][1] == CC_POS_CHANGE) {
+                char x_offset = cc_configs[cur_cc][2];
+                if (x_offset < 0 && x_offset > -nglyphs) {
+                    x = glyphs[nglyphs+x_offset].x;
+                }
+            } // CC_POS_RESET is default for x
+            if (cc_configs[cur_cc][3] == CC_POS_CHANGE) {
+                lineno += cc_configs[cur_cc][4];
+            } // CC_POS_KEEP is default for y
+        }
+        y = text.y + text.size * lineno;
+        if (len > is_cc) {
+            cairo_glyph_free(glyphs);
+        }
+        nglyphs = 0;
+        start += len;
+        len = 0;
+    }
+    cairo_scaled_font_destroy(sft);
+}
+
+/*
  * Draws the given text onto the cairo context
  */
 static void draw_text(cairo_t *ctx, text_t text) {
@@ -336,9 +415,8 @@ static void draw_text(cairo_t *ctx, text_t text) {
     }
 
     cairo_set_source_rgba(ctx, text.color.red, text.color.green, text.color.blue, text.color.alpha);
-    cairo_move_to(ctx, x, text.y);
 
-    cairo_text_path(ctx, text.str);
+    draw_text_with_cc(ctx, text, x);
     cairo_fill_preserve(ctx);
 
     cairo_set_source_rgba(ctx, text.outline_color.red, text.outline_color.green, text.outline_color.blue, text.outline_color.alpha);
