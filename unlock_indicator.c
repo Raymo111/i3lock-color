@@ -365,13 +365,15 @@ static void draw_text_with_cc(cairo_t *ctx, text_t text, double start_x) {
                 DEBUG("draw %c failed\n", text.str[start]);
             }
         }
-        if (is_cc && cur_cc < cc_count) {
+        if (is_cc && (cur_cc < cc_count)) {
             if (cc_configs[cur_cc][1] == CC_POS_CHANGE) {
                 char x_offset = cc_configs[cur_cc][2];
                 if (x_offset < 0 && x_offset > -nglyphs) {
                     x = glyphs[nglyphs+x_offset].x;
                 }
-            } // CC_POS_RESET is default for x
+            }  else if (cc_configs[cur_cc][1] == CC_POS_RESET) {
+                x = start_x;
+            }
             if (cc_configs[cur_cc][3] == CC_POS_CHANGE) {
                 lineno += cc_configs[cur_cc][4];
             } // CC_POS_KEEP is default for y
