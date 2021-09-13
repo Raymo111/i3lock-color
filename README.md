@@ -20,6 +20,13 @@
 [![Discord server](https://img.shields.io/discord/878461145197977630?label=Discord&logo=Discord)](https://discord.gg/FzVPghyDt2)
 ![Maintained](https://img.shields.io/maintenance/yes/2021)
 <!--![Arch Linux package](https://img.shields.io/archlinux/v/community/x86_64/i3lock-color?logo=arch%20linux&label=Community%20version)-->
+[![AUR release ver](https://img.shields.io/aur/version/i3lock-color?label=AUR%20release%20ver)](https://aur.archlinux.org/packages/i3lock-color/)
+[![AUR git ver](https://img.shields.io/aur/version/i3lock-color-git?label=AUR%20git%20ver)](https://aur.archlinux.org/packages/i3lock-color-git/)
+![AUR votes](https://img.shields.io/aur/votes/i3lock-color-git)
+[![GitHub forks](https://img.shields.io/github/forks/Raymo111/i3lock-color)](https://github.com/Raymo111/i3lock-color/network/members)
+[![GitHub stars](https://img.shields.io/github/stars/Raymo111/i3lock-color)](https://github.com/Raymo111/i3lock-color/stargazers)
+[![GitHub watchers](https://img.shields.io/github/watchers/Raymo111/i3lock-color)](https://github.com/Raymo111/i3lock-color/watchers)
+![Maintained](https://img.shields.io/maintenance/yes/2021)
 
 ### The world's most popular non-default computer lockscreen.
 **A modern version of i3lock with color functionality and other features.**
