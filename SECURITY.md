@@ -12,7 +12,7 @@ currently being supported with security updates.
 
 ## Reporting a Vulnerability
 
-If there's a severe security vulnerability in the latest version of i3lock-color, don't post a public issue. Either email me directly at [i3lock@raymond.li](mailto:i3lock@raymond.li?subject=i3lock-color%20security%20vulnerability), or encrypt the issue text with my PGP public key:
+If there's a severe security vulnerability in the latest version of i3lock-color, don't post a public issue. Either email me directly at [i3lock-color@raymond.li](mailto:i3lock@raymond.li?subject=i3lock-color%20security%20vulnerability), or encrypt the issue text with my PGP public key:
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 

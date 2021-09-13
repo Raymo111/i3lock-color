@@ -14,5 +14,3 @@ void blur_impl_horizontal_pass_sse2(uint32_t *src, uint32_t *dst, int width, int
 #endif
 void blur_impl_horizontal_pass_generic(uint32_t *src, uint32_t *dst, int width, int height);
 #endif
-
-

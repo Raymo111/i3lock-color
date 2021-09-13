@@ -1,8 +1,8 @@
 /*
  * vim:ts=4:sw=4:expandtab
  *
- * © 2010 Michael
- * @ © 2020 Raymond Li
+ * © 2010 Michael Stapelberg
+ * © 2021 Raymond Li
  *
  * xcb.c: contains all functions which use XCB to talk to X11. Mostly wrappers
  *        around the rather complicated/ugly parts of the XCB API.

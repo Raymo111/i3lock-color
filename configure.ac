@@ -2,7 +2,7 @@
 # Run autoreconf -fi to generate a configure script from this file.
 
 AC_PREREQ([2.69])
-AC_INIT([i3lock-color], [m4_esyscmd_s([cat I3LOCK_VERSION])], [https://github.com/Raymo11/i3lock-color/issues])
+AC_INIT([i3lock-color],[m4_esyscmd_s([cat I3LOCK_VERSION])],[https://github.com/Raymo11/i3lock-color/issues])
 # For AX_EXTEND_SRCDIR
 AX_ENABLE_BUILDDIR
 AM_INIT_AUTOMAKE([foreign subdir-objects -Wall no-dist-gzip dist-bzip2])
@@ -50,7 +50,7 @@ dnl is_release must be lowercase because AX_CHECK_ENABLE_DEBUG calls m4_tolower
 dnl on its fourth argument.
 AX_CHECK_ENABLE_DEBUG([yes], , [UNUSED_NDEBUG], [$is_release])
 
-AC_PROG_CC_C99
+AC_PROG_CC
 
 # For strnlen() and vasprintf().
 AC_USE_SYSTEM_EXTENSIONS
@@ -68,8 +68,7 @@ AC_FUNC_STRNLEN
 AC_CHECK_FUNCS([atexit dup2 ftruncate getcwd gettimeofday localtime_r memchr memset mkdir rmdir setlocale socket strcasecmp strchr strdup strerror strncasecmp strndup strrchr strspn strstr strtol strtoul], , [AC_MSG_FAILURE([cannot find the $ac_func function, which i3lock requires])])
 AC_CHECK_FUNCS([explicit_bzero])
 
-# Checks for libraries.
-
+# Check for libraries
 AC_SEARCH_LIBS([floor], [m], , [AC_MSG_FAILURE([cannot find the required floor() function despite trying to link with -lm])])
 
 # libev does not ship with a pkg-config file :(.
@@ -77,17 +76,10 @@ AC_SEARCH_LIBS([ev_run], [ev], , [AC_MSG_FAILURE([cannot find the required ev_ru
 
 AC_SEARCH_LIBS([shm_open], [rt])
 
-# Use system-auth instead of login on Arch
-if [[ -f /etc/arch-release ]]; then
-    echo "Using PAM for Arch"
-    sed -i "s/^#auth include system-auth/auth include system-auth/g" ../pam/i3lock
-    sed -i "s/^auth include login/#auth include login/g" ../pam/i3lock
-fi
-
-# Use system-auth instead of login on Gentoo
-if [[ -f /etc/gentoo-release ]]; then
-    echo "Using PAM for Gentoo"
-    sed -i "s/^#auth include system-auth/auth include system-auth/g" ../pam/i3lock
+# Use system-local-login instead of login on Arch and Gentoo
+if [[ -f /etc/arch-release ]] || [[ -f /etc/gentoo-release ]]; then
+    echo "Using PAM for Arch/Gentoo"
+    sed -i "s/^#auth include system-local-login/auth include system-local-login/g" ../pam/i3lock
     sed -i "s/^auth include login/#auth include login/g" ../pam/i3lock
 fi
 
@@ -105,7 +97,7 @@ AC_SEARCH_LIBS([iconv_open], [iconv], , [AC_MSG_FAILURE([cannot find the require
 
 dnl Each prefix corresponds to a source tarball which users might have
 dnl downloaded in a newer version and would like to overwrite.
-PKG_CHECK_MODULES([XCB], [xcb xcb-xkb xcb-xinerama xcb-randr xcb-composite])
+PKG_CHECK_MODULES([XCB], [xcb xcb-xkb xcb-xinerama xcb-randr xcb-composite xcb-xtest])
 PKG_CHECK_MODULES([XCB_IMAGE], [xcb-image])
 PKG_CHECK_MODULES([XCB_UTIL], [xcb-event xcb-util xcb-atom])
 PKG_CHECK_MODULES([XCB_UTIL_XRM], [xcb-xrm])
@@ -167,9 +159,10 @@ AS_HELP_STRING([is release version:], [${is_release}])
 
 AS_HELP_STRING([enable debug flags:], [${ax_enable_debug}])
 AS_HELP_STRING([code coverage:], [${CODE_COVERAGE_ENABLED}])
-AS_HELP_STRING([enabled sanitizers:], [${ax_enabled_sanitizers}])
+AS_HELP_STRING([enabled sanitizers:], [${ax_enabled_sanitizers}])"
 
-To compile, run:
-
-  cd `pwd` && make
---------------------------------------------------------------------------------"
+#To compile, run:
+#
+#  cd `pwd` && make
+echo \
+"--------------------------------------------------------------------------------"
