@@ -24,7 +24,7 @@ For other kinds of issues, you can remove this section, or add any aditional inf
 ## Environment
 Output of `i3lock --version`:
 <pre>
-i3lock version: 
+i3lock version:
 </pre>
 
 Where'd you get i3lock-color from?

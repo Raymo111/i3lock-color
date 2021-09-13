@@ -3,7 +3,8 @@ i3lock
 tags
 *.swp
 *.gz
-/pam/i3lock
+*~
+x86_64-pc-linux-gnu
 
 ################################################################################
 # https://raw.githubusercontent.com/github/gitignore/master/Autotools.gitignore
@@ -31,5 +32,3 @@ Makefile.in
 /install-sh
 /missing
 /stamp-h1
-*.in~
-pam/i3lock
