@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
 #include <getopt.h>
@@ -24,8 +25,11 @@
 #include "xcb.h"
 #include "unlock_indicator.h"
 
+void update_arguments(int argc, char *argv[], struct option longopts[], char optstring[], bool api);
+
 extern bool debug_mode;
 extern char* api_fifo_path;
+extern bool api_force_redraw;
 extern pthread_mutex_t redraw_mutex;
 
 extern char color[9];
@@ -164,9 +168,12 @@ extern bool bar_reversed;
 extern cairo_surface_t *img;
 extern xcb_window_t win;
 
+extern char *image_path;
+extern char *image_raw_format;
+
 int is_directory(const char *path);
 
-static void update_arguments(int argc, char *argv[]) {
+static void update_api(int argc, char *argv[]) {
     struct option longopts[] = {
         {"color", required_argument, NULL, 'c'},
         {"no-unlock-indicator", no_argument, NULL, 'u'},
@@ -289,565 +296,10 @@ static void update_arguments(int argc, char *argv[]) {
 
         {NULL, no_argument, NULL, 0}};
 
-    int o = 0;
-    int longoptind = 0;
     char *optstring = "c:ui:tCFLMrs:kB:m";
-    char *arg = NULL;
-    int opt = 0;
 
-    char padded[9] = "ffffffff"; \
-
-#define parse_color(acolor)\
-    arg = optarg;\
-    if (arg[0] == '#') arg++;\
-    if (strlen(arg) == 6) {\
-      /* If 6 digits given, assume RGB and pad 0xff for alpha */\
-      strncpy( padded, arg, 6 );\
-      arg = padded;\
-    }\
-    if (strlen(arg) != 8 || sscanf(arg, "%08[0-9a-fA-F]", acolor) != 1) {\
-        fprintf(stderr, #acolor " is invalid, color must be given in 3 or 4-bye format: rrggbb[aa]\n");\
-        return;\
-    }
-
-#define parse_outline_width(awidth)\
-    arg = optarg;\
-    if (sscanf(arg, "%lf", &awidth) != 1) {\
-        fprintf(stderr, #awidth " must be a number.\n");\
-        return;\
-    }\
-    if (awidth < 0) {\
-        fprintf(stderr, #awidth " must be a positive double; ignoring...\n");\
-        awidth = 0;\
-    }
-
-#define apierr(fmt, ...) {\
-        fprintf(stderr, "[i3lock-error] " fmt, ##__VA_ARGS__);\
-        return;\
-    }
-
-    char *image_path = NULL;
-    char *image_raw_format = NULL;
-
-    optind = 0;
-
-    while ((o = getopt_long(argc, argv, optstring, longopts, &longoptind)) != -1) {
-        DEBUG("OPTLONG: %d: - %s\n", o, optarg);
-        switch (o) {
-            case 'u':
-                unlock_indicator = false;
-                break;
-            case 'i':
-                image_path = strdup(optarg);
-                break;
-            case 't':
-                bg_type = TILE;
-                break;
-            case 'C':
-                bg_type = CENTER;
-                break;
-            case 'F':
-                bg_type = FILL;
-                break;
-            case 'L':
-                bg_type = SCALE;
-                break;
-            case 'M':
-                bg_type = MAX;
-                break;
-            case 'r':
-                internal_line_source = 1; //sets the line drawn inside to use the inside color when drawn
-                break;
-            case 's':
-                internal_line_source = 2;
-                break;
-            case 'k':
-                show_clock = true;
-                break;
-            case 'B':
-                blur = true;
-                blur_sigma = atoi(optarg);
-                break;
-
-            // Begin colors
-            case 'c':
-                parse_color(color);
-                break;
-            case 300:
-                parse_color(insidevercolor);
-                break;
-            case 301:
-                parse_color(insidewrongcolor);
-                break;
-            case 302:
-                parse_color(insidecolor);
-                break;
-            case 303:
-                parse_color(ringvercolor);
-                break;
-            case 304:
-                parse_color(ringwrongcolor);
-                break;
-            case 305:
-                parse_color(ringcolor);
-                break;
-            case 306:
-                parse_color(linecolor);
-                break;
-            case 307:
-                parse_color(verifcolor);
-                break;
-            case 308:
-                parse_color(wrongcolor);
-                break;
-            case 309:
-                parse_color(layoutcolor);
-                break;
-            case 310:
-                parse_color(timecolor);
-                break;
-            case 311:
-                parse_color(datecolor);
-                break;
-            case 312:
-                parse_color(keyhlcolor);
-                break;
-            case 313:
-                parse_color(bshlcolor);
-                break;
-            case 314:
-                parse_color(separatorcolor);
-                break;
-            case 315:
-                parse_color(greetercolor);
-                break;
-            case  316:
-                parse_color(verifoutlinecolor);
-                break;
-            case  317:
-                parse_color(wrongoutlinecolor);
-                break;
-            case  318:
-                parse_color(layoutoutlinecolor);
-                break;
-            case  319:
-                parse_color(timeoutlinecolor);
-                break;
-            case  320:
-                parse_color(dateoutlinecolor);
-                break;
-            case  321:
-                parse_color(greeteroutlinecolor);
-                break;
-            case  322:
-                parse_color(modifcolor);
-                break;
-            case  323:
-                parse_color(modifoutlinecolor);
-                break;
-
-			// General indicator opts
-            case 400:
-                show_clock = true;
-                always_show_clock = true;
-                break;
-            case 401:
-                show_indicator = true;
-                break;
-            case 402:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &circle_radius) != 1) {
-                    apierr("radius must be a number.\n");
-                }
-                if (circle_radius < 1) {
-                    fprintf(stderr, "radius must be a positive integer; ignoring...\n");
-                    circle_radius = 90.0;
-                }
-                break;
-            case 403:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &ring_width) != 1) {
-                    apierr("ring-width must be a number.\n");
-                }
-                if (ring_width < 1.0) {
-                    fprintf(stderr, "ring-width must be a positive float; ignoring...\n");
-                    ring_width = 7.0;
-                }
-                break;
-
-			// Alignment stuff
-            case 500:
-                opt = atoi(optarg);
-                if (opt < 0 || opt > 2) opt = 0;
-                time_align = opt;
-                break;
-            case 501:
-                opt = atoi(optarg);
-                if (opt < 0 || opt > 2) opt = 0;
-                date_align = opt;
-                break;
-            case 502:
-                opt = atoi(optarg);
-                if (opt < 0 || opt > 2) opt = 0;
-                verif_align = opt;
-                break;
-            case 503:
-                opt = atoi(optarg);
-                if (opt < 0 || opt > 2) opt = 0;
-                wrong_align = opt;
-                break;
-            case 504:
-                opt = atoi(optarg);
-                if (opt < 0 || opt > 2) opt = 0;
-                layout_align = opt;
-                break;
-            case 505:
-                opt = atoi(optarg);
-                if (opt < 0 || opt > 2) opt = 0;
-                modif_align = opt;
-                break;
-            case 506:
-                opt = atoi(optarg);
-                if (opt < 0 || opt > 2) opt = 0;
-                greeter_align = opt;
-                break;
-
-			// String stuff
-            case 510:
-                if (strlen(optarg) > 31) {
-                    apierr("time format string can be at most 31 characters.\n");
-                }
-                strcpy(time_format,optarg);
-                break;
-            case 511:
-                if (strlen(optarg) > 31) {
-                    apierr("radius must be a number.\n");
-                }
-                strcpy(date_format,optarg);
-                break;
-            case 512:
-                verif_text = optarg;
-                break;
-            case 513:
-                wrong_text = optarg;
-                break;
-            case 514:
-                // if layout is NULL, do nothing
-                // if not NULL, attempt to display stuff
-                // need to code some sane defaults for it
-                keylayout_mode = atoi(optarg);
-                break;
-            case 515:
-                noinput_text = optarg;
-                break;
-            case 516:
-                lock_text = optarg;
-                break;
-            case 517:
-                lock_failed_text = optarg;
-                break;
-            case 518:
-                greeter_text = optarg;
-                break;
-            case 519:
-                show_modkey_text = false;
-                break;
-
-			// Font stuff
-            case 520:
-                if (strlen(optarg) > 63) {
-                    apierr("time fotn string can be at most 63 characters.\n");
-                }
-                strcpy(fonts[TIME_FONT],optarg);
-                break;
-            case 521:
-                if (strlen(optarg) > 63) {
-                    apierr("date font string can be at most 63 characters.\n");
-                }
-                strcpy(fonts[DATE_FONT],optarg);
-                break;
-            case 522:
-                if (strlen(optarg) > 63) {
-                    apierr("verif cont string can be at most 63 characters.\n");
-                }
-                strcpy(fonts[VERIF_FONT],optarg);
-                break;
-            case 523:
-                if (strlen(optarg) > 63) {
-                    apierr("wrong font string can be at most 63 characters.\n");
-                }
-                strcpy(fonts[WRONG_FONT],optarg);
-                break;
-            case 524:
-                if (strlen(optarg) > 63) {
-                    apierr("layout font string can be at most 63 characters.\n");
-                }
-                strcpy(fonts[LAYOUT_FONT],optarg);
-                break;
-            case 525:
-                if (strlen(optarg) > 63) {
-                    apierr("greeter font string can be at most 63 characters.\n");
-                }
-                strcpy(fonts[GREETER_FONT],optarg);
-                break;
-
-			// Text size
-            case 530:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &time_size) != 1) {
-                    apierr("timesize must be a number.\n");
-                }
-                if (time_size < 1) {
-                    apierr("timesize must be larger than 0.\n");
-                }
-                break;
-            case 531:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &date_size) != 1) {
-                    apierr("datesize must be a number.\n");
-                }
-                if (date_size < 1) {
-                    apierr("datesize must be larger than 0.\n");
-                }
-                break;
-            case 532:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &verif_size) != 1) {
-                    apierr("verifsize must be a number.\n");
-                }
-                if (verif_size < 1) {
-                    fprintf(stderr, "verifsize must be a positive integer; ignoring...\n");
-                    verif_size = 28.0;
-                }
-                break;
-            case 533:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &wrong_size) != 1) {
-                    apierr("wrongsize must be a number.\n");
-                }
-                if (wrong_size < 1) {
-                    fprintf(stderr, "wrongsize must be a positive integer; ignoring...\n");
-                    wrong_size = 28.0;
-                }
-                break;
-            case 534:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &layout_size) != 1) {
-                    apierr("layoutsize must be a number.\n");
-                }
-                if (date_size < 1) {
-                    apierr("layoutsize must be larger than 0.\n");
-                }
-                break;
-            case 535:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &modifier_size) != 1) {
-                    apierr("modsize must be a number.\n");
-                }
-                if (modifier_size < 1) {
-                    fprintf(stderr, "modsize must be a positive integer; ignoring...\n");
-                    modifier_size = 14.0;
-                }
-                break;
-            case 536:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &greeter_size) != 1) {
-                    apierr("greetersize must be a number.\n");
-                }
-                if (greeter_size < 1) {
-                    fprintf(stderr, "greetersize must be a positive integer; ignoring...\n");
-                    greeter_size = 14.0;
-                }
-                break;
-
-			// Positions
-            case 540:
-                //read in to time_x_expr and time_y_expr
-                if (strlen(optarg) > 31) {
-                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                    apierr("time position string can be at most 31 characters.\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", time_x_expr, time_y_expr) != 2) {
-                    apierr("timepos must be of the form x:y.\n");
-                }
-                break;
-            case 541:
-                //read in to date_x_expr and date_y_expr
-                if (strlen(optarg) > 31) {
-                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                    apierr("date position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", date_x_expr, date_y_expr) != 2) {
-                    apierr("datepos must be of the form x:y\n");
-                }
-                break;
-            case 542:
-                // read in to time_x_expr and time_y_expr
-                if (strlen(optarg) > 31) {
-                    apierr("verif position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", verif_x_expr, verif_y_expr) != 2) {
-                    apierr("verifpos must be of the form x:y\n");
-                }
-                break;
-            case 543:
-                if (strlen(optarg) > 31) {
-                    apierr("\"wrong\" text position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", wrong_x_expr, wrong_y_expr) != 2) {
-                    apierr("verifpos must be of the form x:y\n");
-                }
-                break;
-            case 544:
-                if (strlen(optarg) > 31) {
-                    apierr("layout position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", layout_x_expr, layout_y_expr) != 2) {
-                    apierr("layoutpos must be of the form x:y\n");
-                }
-                break;
-            case 545:
-                if (strlen(optarg) > 31) {
-                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                    apierr("status position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", status_x_expr, status_y_expr) != 2) {
-                    apierr("statuspos must be of the form x:y\n");
-                }
-                break;
-            case 546:
-                if (strlen(optarg) > 31) {
-                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                    apierr("modif position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", modif_x_expr, modif_y_expr) != 2) {
-                    apierr("modifpos must be of the form x:y\n");
-                }
-                break;
-            case 547:
-                if (strlen(optarg) > 31) {
-                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                    apierr("indicator position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", ind_x_expr, ind_y_expr) != 2) {
-                    apierr("indpos must be of the form x:y\n");
-                }
-                break;
-            case 548:
-                if (strlen(optarg) > 31) {
-                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                    apierr("indicator position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", greeter_x_expr, greeter_y_expr) != 2) {
-                    apierr("indpos must be of the form x:y\n");
-                }
-                break;
-
-            // text outline width
-            case 560:
-                parse_outline_width(timeoutlinewidth);
-                break;
-            case 561:
-                parse_outline_width(dateoutlinewidth);
-                break;
-            case 562:
-                parse_outline_width(verifoutlinewidth);
-                break;
-            case 563:
-                parse_outline_width(wrongoutlinewidth);
-                break;
-            case 564:
-                parse_outline_width(modifieroutlinewidth);
-                break;
-            case 565:
-                parse_outline_width(layoutoutlinewidth);
-                break;
-            case 566:
-                parse_outline_width(greeteroutlinewidth);
-                break;
-
-			// Bar indicator
-            case 700:
-                bar_enabled = true;
-                break;
-            case 701:
-                opt = atoi(optarg);
-                switch(opt) {
-                    case BAR_REVERSED:
-                        bar_reversed = true;
-                        break;
-                    case BAR_BIDIRECTIONAL:
-                        bar_bidirectional = true;
-                        break;
-                    case BAR_DEFAULT:
-                    default:
-                        break;
-                }
-                break;
-            case 703:
-                arg = optarg;
-                if (strcmp(arg, "vertical") == 0)
-                    bar_orientation = BAR_VERT;
-                else if (strcmp(arg, "horizontal") == 0)
-                    bar_orientation = BAR_FLAT;
-                else
-                    apierr("bar orientation must be \"vertical\" or \"horizontal\"\n");
-                break;
-            case 704:
-                bar_step = atoi(optarg);
-                if (bar_step < 1) bar_step = 15;
-                break;
-            case 705:
-                max_bar_height = atoi(optarg);
-                if (max_bar_height < 1) max_bar_height = 25;
-                break;
-            case 706:
-                bar_base_height = atoi(optarg);
-                if (bar_base_height < 1) bar_base_height = 25;
-                break;
-            case 707:
-                parse_color(bar_base_color);
-                break;
-            case 708:
-                opt = atoi(optarg);
-                if (opt > 0)
-                    bar_periodic_step = opt;
-                break;
-            case 709:
-                arg = optarg;
-                if (sscanf(arg, "%31[^:]:%31[^:]", bar_x_expr, bar_y_expr) < 1) {
-                    apierr("bar-position must be a single number or of the form x:y with a max length of 31\n");
-                }
-                break;
-            case 710:
-                bar_count = atoi(optarg);
-                if (bar_count > MAX_BAR_COUNT || bar_count < MIN_BAR_COUNT) {
-                    apierr("bar-count must be between %d and %d\n", MIN_BAR_COUNT, MAX_BAR_COUNT);
-                }
-                break;
-            case 711:
-                arg = optarg;
-                if (sscanf(arg, "%31s", bar_width_expr) != 1) {
-                    apierr("missing argument for bar-total-width\n");
-                }
-                break;
-
-            case 998:
-                image_raw_format = strdup(optarg);
-                break;
-            default:
-                break;
-        }
-    }
+    image_path = NULL;
+    update_arguments(argc, argv, longopts, optstring, true);
 
     if (image_path != NULL) {
         if (!is_directory(image_path)) {
@@ -860,49 +312,31 @@ static void update_arguments(int argc, char *argv[]) {
     free(image_raw_format);
 }
 
-static void init_str(str_t *str, size_t size) {
-    str->value = (char*) malloc(size);
-    memset(str->value, 0, size);
-    str->size = size;
-}
-static char** str_destruct(arr_t arr) {
-    size_t str_size = sizeof(str_t) * arr.size;
-    char **str = (char**) malloc(sizeof(str_t) * arr.size);
+static char** arr_copy(char *arr[], size_t len) {
+    size_t str_size = sizeof(*arr) * len;
+    char **str = malloc(sizeof(*str) * (len + 1));
     memset(str, 0, str_size);
-
-    for (int i = 0; i < arr.size; i++) {
-        str[i] = strdup(arr.items[i].value);
+    for (int i = 0; i < len; i++) {
+        str[i] = strdup(arr[i]);
     }
     return str;
 }
-static void str_push_c(str_t *str, char c) {
-    int len_str = strlen(str->value);
-    if (len_str + 2 >= str->size) {
-        str->size = (len_str + 1) * 2;
-        str->value = (char *) realloc(str->value, str->size);
+static void str_push_c(char *str[], char c, size_t *size) {
+    int len = strlen(*str);
+    if (len + 2 >= *size) {
+        *size *= 2;
+        *str = realloc(*str, *size * sizeof(char*));
     }
-    str->value[len_str] = c;
-    str->value[len_str+1] = '\0';
+    (*str)[len] = c;
+    (*str)[len+1] = '\0';
 }
-
-static void push_back(arr_t *arr, str_t str) {
-    arr->items = (str_t *) realloc(arr->items, sizeof(str_t) * (arr->size + 2));
-
-    str_t toadd;
-    init_str(&toadd, 0);
-    toadd.value = strdup(str.value);
-    toadd.size = str.size;
-
-    arr->items[arr->size] = toadd;
-    arr->size++;
-}
-
-static void init_str_arr(arr_t *arr) {
-    str_t null;
-    init_str(&null, 0);
-    arr->items = (str_t *) malloc(0);
-    arr->items[0] = null;
-    arr->size = 0;
+static void arr_push(char **arr[], char *str, size_t *size, size_t *len) {
+    if (*len + 1 >= *size) {
+        *size *= 2;
+        *arr = realloc(*arr, *size * sizeof(char**));
+    }
+    (*arr)[*len] = strdup(str);
+    (*len)++;
 }
 
 /**
@@ -912,10 +346,14 @@ static void init_str_arr(arr_t *arr) {
 static int parse_args(arg_data *data, char str[]) {
     char c;
     int i = 0;
-    str_t curr_arg;
-    arr_t out_args;
-    init_str(&curr_arg, 20);
-    init_str_arr(&out_args);
+    size_t curr_arg_size = 20;
+    char *curr_arg = malloc(curr_arg_size);
+    memset(curr_arg, 0, curr_arg_size);
+
+    size_t out_args_size = 10;
+    size_t out_args_length = 0;
+    char **out_args = malloc(sizeof(char*) * out_args_size);
+
     enum State {
         InArg,
         InArgQuote,
@@ -928,8 +366,7 @@ static int parse_args(arg_data *data, char str[]) {
         if (c == '\"' || c == '\'') { // Quote
             switch (curr_state) {
                 case OutOfArg:
-                    free(curr_arg.value);
-                    init_str(&curr_arg, 20);
+                    memset(curr_arg, 0, curr_arg_size);
                 case InArg:
                     curr_state = InArgQuote;
                     curr_quote = c;
@@ -938,18 +375,18 @@ static int parse_args(arg_data *data, char str[]) {
                     if (c == curr_quote)
                         curr_state = InArg;
                     else
-                        str_push_c(&curr_arg, c);
+                        str_push_c(&curr_arg, c, &curr_arg_size);
                     break;
             }
         } else
         if (c == ' ' || c == '\t') { // Whitespace
             switch(curr_state) {
                 case InArg:
-                    push_back(&out_args, curr_arg);
+                    arr_push(&out_args, curr_arg, &out_args_size, &out_args_length);
                     curr_state = OutOfArg;
                     break;
                 case InArgQuote:
-                    str_push_c(&curr_arg, c);
+                    str_push_c(&curr_arg, c, &curr_arg_size);
                     break;
                 case OutOfArg:
                     break;
@@ -958,12 +395,11 @@ static int parse_args(arg_data *data, char str[]) {
             switch(curr_state) {
                 case InArg:
                 case InArgQuote:
-                    str_push_c(&curr_arg, c);
+                    str_push_c(&curr_arg, c, &curr_arg_size);
                     break;
                 case OutOfArg:
-                    free(curr_arg.value);
-                    init_str(&curr_arg, 20);
-                    str_push_c(&curr_arg, c);
+                    memset(curr_arg, 0, curr_arg_size);
+                    str_push_c(&curr_arg, c, &curr_arg_size);
                     curr_state = InArg;
                     break;
             }
@@ -972,16 +408,16 @@ static int parse_args(arg_data *data, char str[]) {
     }
 
     if (curr_state == InArg) {
-        push_back(&out_args, curr_arg);
+        arr_push(&out_args, curr_arg, &out_args_size, &out_args_length);
     } else if (curr_state == InArgQuote) {
         return 1;
     }
 
-    size_t argc = out_args.size;
-    char **argv = str_destruct(out_args);
+    size_t argc = out_args_length;
+    char **argv = arr_copy(out_args, argc);
 
-    free(curr_arg.value);
-    free(out_args.items);
+    free(out_args);
+    free(curr_arg);
 
     data->argc = argc;
     data->argv = argv;
@@ -995,61 +431,79 @@ void *listen_api(void* _) {
         if (remove(api_fifo_path) != 0) {
             fprintf(stderr, "Could not remove file \"%s\": %s\n",
                     api_fifo_path, strerror(errno));
+            return NULL;
         }
     }
     if (mkfifo(api_fifo_path, S_IRWXU) != 0) {
         fprintf(stderr, "Could not create FIFO file \"%s\": %s\n",
                 api_fifo_path, strerror(errno));
+        return NULL;
     }
 
     FILE *fifo;
     char c;
     int i;
     int times = 0;
-    char *text = (char *) malloc(50);
+    char *text = malloc(50);
     arg_data data;
 
     DEBUG("Created fifo at \"%s\"\n", api_fifo_path);
 
+#define open_fifo() {\
+    fifo = fopen(api_fifo_path, "rb");\
+    if (fifo == NULL) {\
+        fprintf(stderr, "Could not open FIFO file \"%s\": %s\n", \
+                api_fifo_path, strerror(errno));\
+        return NULL;\
+    }\
+}
+#define close_fifo() {\
+    if (fifo != NULL) fclose(fifo);\
+}
+    open_fifo()
+    bool reading = true;
+
     while (1) {
         strcpy(text, "command ");
         i = strlen(text);
+        int n = i;
 
-        fifo = fopen(api_fifo_path, "rb");
-        if (fifo == NULL) {
-            fprintf(stderr, "Could not open FIFO file \"%s\": %s\n",
-                    api_fifo_path, strerror(errno));
-            break;
-        }
-        while ((c = fgetc(fifo)) != EOF) {
+        reading = true;
+        while (reading && (c = fgetc(fifo)) != EOF) {
             if (sizeof(text) <= i) {
-                text = (char *) realloc(text, i * 2);
+                text = realloc(text, i * 2);
             }
             if (c == '\n') {
                 text[i] = ' ';
-            } else {
+                reading = false;
+            } else
                 text[i] = c;
-            }
             i++;
         }
         text[i] = '\0';
-        fclose(fifo);
+        if (c == EOF) {
+            close_fifo();
+            open_fifo();
+        }
+        if (n == i) continue;
 
         DEBUG("API message received - %d\n", times);
         DEBUG("Message: \"%s\"\n", text);
         times++;
         if (parse_args(&data, text) != 0) {
-            fprintf(stderr, "Couldn not parse message\n");
+            fprintf(stderr, "Could not parse message\n");
             continue;
         }
 
-        update_arguments(data.argc, data.argv);
+        update_api(data.argc, data.argv);
         init_colors_once();
 
-        free(text);
-        text = (char *) malloc(50);
-        /*redraw_screen();*/
+        memset(text, 0, i);
+        if (api_force_redraw) {
+            redraw_screen();
+        }
     }
+    fclose(fifo);
 
     return NULL;
 }

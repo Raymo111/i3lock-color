@@ -273,6 +273,7 @@ pthread_mutex_t redraw_mutex;
 pthread_t api_thread;
 // this enables api access to update i3lock
 bool api_enabled = false;
+bool api_force_redraw = false;
 char *api_fifo_path = "/tmp/i3lock-api";
 
 // experimental bar stuff
@@ -1445,18 +1446,681 @@ static void load_slideshow_images(const char *path, char *image_raw_format) {
     closedir(d);
 }
 
+char *image_path = NULL;
+char *image_raw_format = NULL;
+int curs_choice = CURS_NONE;
+
+void update_arguments(int argc, char *argv[], struct option longopts[], char optstring[], bool api) {
+    int o;
+    int longoptind = 0;
+
+    char *arg = NULL;
+    int opt = 0;
+    char padded[9] = "ffffffff"; \
+
+#define opterr(code, fmt, ...) {\
+    if (api) {\
+        fprintf(stderr, "[i3lock-error] " fmt, ##__VA_ARGS__);\
+        return;\
+    } else {\
+        errx(code, fmt, ##__VA_ARGS__);\
+    }\
+}
+
+#define parse_color(acolor)\
+    arg = optarg;\
+    if (arg[0] == '#') arg++;\
+    if (strlen(arg) == 6) {\
+      /* If 6 digits given, assume RGB and pad 0xff for alpha */\
+      strncpy( padded, arg, 6 );\
+      arg = padded;\
+    }\
+    if (strlen(arg) != 8 || sscanf(arg, "%08[0-9a-fA-F]", acolor) != 1)\
+        opterr(1, #acolor " is invalid, color must be given in 3 or 4-byte format: rrggbb[aa]\n");
+
+#define parse_outline_width(awidth)\
+    arg = optarg;\
+    if (sscanf(arg, "%lf", &awidth) != 1)\
+        opterr(1, #awidth " must be a number\n");\
+    if (awidth < 0) {\
+        fprintf(stderr, #awidth " must be a positive double; ignoring...\n");\
+        awidth = 0;\
+    }
+
+    optind = 0;
+
+    while ((o = getopt_long(argc, argv, optstring, longopts, &longoptind)) != -1) {
+        switch (o) {
+            case 'v':
+                opterr(EXIT_SUCCESS, "version " I3LOCK_VERSION " © 2010 Michael Stapelberg, © 2015 Cassandra Fox, © 2021 Raymond Li");
+            case 'n':
+                dont_fork = true;
+                break;
+            case 'b':
+                beep = true;
+                break;
+            case 'd':
+                fprintf(stderr, "DPMS support has been removed from i3lock. Please see the manpage i3lock(1).\n");
+                break;
+            case 'I': {
+                fprintf(stderr, "Inactivity timeout only makes sense with DPMS, which was removed. Please see the manpage i3lock(1).\n");
+                break;
+            }
+            case 'u':
+                unlock_indicator = false;
+                break;
+            case 'i':
+                image_path = strdup(optarg);
+                break;
+            case 't':
+                if(bg_type != NONE) {
+                    opterr(EXIT_FAILURE, "i3lock-color: Only one background type can be used.");
+                }
+                bg_type = TILE;
+                break;
+            case 'C':
+                if(bg_type != NONE) {
+                    opterr(EXIT_FAILURE, "i3lock-color: Only one background type can be used.");
+                }
+                bg_type = CENTER;
+                break;
+            case 'F':
+                if(bg_type != NONE) {
+                    opterr(EXIT_FAILURE, "i3lock-color: Only one background type can be used.");
+                }
+                bg_type = FILL;
+                break;
+            case 'L':
+                if(bg_type != NONE) {
+                    opterr(EXIT_FAILURE, "i3lock-color: Only one background type can be used.");
+                }
+                bg_type = SCALE;
+                break;
+            case 'M':
+                if(bg_type != NONE) {
+                    opterr(EXIT_FAILURE, "i3lock-color: Only one background type can be used.");
+                }
+                bg_type = MAX;
+                break;
+            case 'p':
+                if (!strcmp(optarg, "win")) {
+                    curs_choice = CURS_WIN;
+                } else if (!strcmp(optarg, "default")) {
+                    curs_choice = CURS_DEFAULT;
+                } else {
+                    opterr(EXIT_FAILURE, "i3lock: Invalid pointer type given. Expected one of \"win\" or \"default\".");
+                }
+                break;
+            case 'e':
+                ignore_empty_password = true;
+                break;
+            case 'f':
+                show_failed_attempts = true;
+                break;
+            case 'r':
+                if (internal_line_source != 0) {
+                  opterr(EXIT_FAILURE, "i3lock-color: Options line-uses-ring and line-uses-inside conflict.");
+                }
+                internal_line_source = 1; //sets the line drawn inside to use the inside color when drawn
+                break;
+            case 's':
+                if (internal_line_source != 0) {
+                  opterr(EXIT_FAILURE, "i3lock-color: Options line-uses-ring and line-uses-inside conflict.");
+                }
+                internal_line_source = 2;
+                break;
+            case 'S':
+                screen_number = atoi(optarg);
+                break;
+
+            case 'k':
+                show_clock = true;
+                break;
+            case 'B':
+                blur = true;
+                blur_sigma = atoi(optarg);
+                break;
+
+            // Begin colors
+            case 'c':
+                parse_color(color);
+                break;
+            case 300:
+                parse_color(insidevercolor);
+                break;
+            case 301:
+                parse_color(insidewrongcolor);
+                break;
+            case 302:
+                parse_color(insidecolor);
+                break;
+            case 303:
+                parse_color(ringvercolor);
+                break;
+            case 304:
+                parse_color(ringwrongcolor);
+                break;
+            case 305:
+                parse_color(ringcolor);
+                break;
+            case 306:
+                parse_color(linecolor);
+                break;
+            case 307:
+                parse_color(verifcolor);
+                break;
+            case 308:
+                parse_color(wrongcolor);
+                break;
+            case 309:
+                parse_color(layoutcolor);
+                break;
+            case 310:
+                parse_color(timecolor);
+                break;
+            case 311:
+                parse_color(datecolor);
+                break;
+            case 312:
+                parse_color(keyhlcolor);
+                break;
+            case 313:
+                parse_color(bshlcolor);
+                break;
+            case 314:
+                parse_color(separatorcolor);
+                break;
+            case 315:
+                parse_color(greetercolor);
+                break;
+            case  316:
+                parse_color(verifoutlinecolor);
+                break;
+            case  317:
+                parse_color(wrongoutlinecolor);
+                break;
+            case  318:
+                parse_color(layoutoutlinecolor);
+                break;
+            case  319:
+                parse_color(timeoutlinecolor);
+                break;
+            case  320:
+                parse_color(dateoutlinecolor);
+                break;
+            case  321:
+                parse_color(greeteroutlinecolor);
+                break;
+            case  322:
+                parse_color(modifcolor);
+                break;
+            case  323:
+                parse_color(modifoutlinecolor);
+                break;
+
+
+			// General indicator opts
+            case 400:
+                show_clock = true;
+                always_show_clock = true;
+                break;
+            case 401:
+                show_indicator = true;
+                break;
+            case 402:
+                arg = optarg;
+                if (sscanf(arg, "%lf", &circle_radius) != 1)
+                    opterr(1, "radius must be a number\n");
+                if (circle_radius < 1) {
+                    fprintf(stderr, "radius must be a positive integer; ignoring...\n");
+                    circle_radius = 90.0;
+                }
+                break;
+            case 403:
+                arg = optarg;
+                if (sscanf(arg, "%lf", &ring_width) != 1)
+                    opterr(1, "ring-width must be a number\n");
+                if (ring_width < 1.0) {
+                    fprintf(stderr, "ring-width must be a positive float; ignoring...\n");
+                    ring_width = 7.0;
+                }
+                break;
+
+			// Alignment stuff
+            case 500:
+                opt = atoi(optarg);
+                if (opt < 0 || opt > 2) opt = 0;
+                time_align = opt;
+                break;
+            case 501:
+                opt = atoi(optarg);
+                if (opt < 0 || opt > 2) opt = 0;
+                date_align = opt;
+                break;
+            case 502:
+                opt = atoi(optarg);
+                if (opt < 0 || opt > 2) opt = 0;
+                verif_align = opt;
+                break;
+            case 503:
+                opt = atoi(optarg);
+                if (opt < 0 || opt > 2) opt = 0;
+                wrong_align = opt;
+                break;
+            case 504:
+                opt = atoi(optarg);
+                if (opt < 0 || opt > 2) opt = 0;
+                layout_align = opt;
+                break;
+            case 505:
+                opt = atoi(optarg);
+                if (opt < 0 || opt > 2) opt = 0;
+                modif_align = opt;
+                break;
+            case 506:
+                opt = atoi(optarg);
+                if (opt < 0 || opt > 2) opt = 0;
+                greeter_align = opt;
+                break;
+
+			// String stuff
+            case 510:
+                if (strlen(optarg) > 31) {
+                    opterr(1, "time format string can be at most 31 characters\n");
+                }
+                strcpy(time_format,optarg);
+                break;
+            case 511:
+                if (strlen(optarg) > 31) {
+                    opterr(1, "time format string can be at most 31 characters\n");
+                }
+                strcpy(date_format,optarg);
+                break;
+            case 512:
+                verif_text = optarg;
+                break;
+            case 513:
+                wrong_text = optarg;
+                break;
+            case 514:
+                // if layout is NULL, do nothing
+                // if not NULL, attempt to display stuff
+                // need to code some sane defaults for it
+                keylayout_mode = atoi(optarg);
+                break;
+            case 515:
+                noinput_text = optarg;
+                break;
+            case 516:
+                lock_text = optarg;
+                break;
+            case 517:
+                lock_failed_text = optarg;
+                break;
+            case 518:
+                greeter_text = optarg;
+                break;
+            case 519:
+                show_modkey_text = false;
+                break;
+
+			// Font stuff
+            case 520:
+                if (strlen(optarg) > 63) {
+                    opterr(1, "time font string can be at most 63 characters\n");
+                }
+                strcpy(fonts[TIME_FONT],optarg);
+                break;
+            case 521:
+                if (strlen(optarg) > 63) {
+                    opterr(1, "date font string can be at most 63 characters\n");
+                }
+                strcpy(fonts[DATE_FONT],optarg);
+                break;
+            case 522:
+                if (strlen(optarg) > 63) {
+                    opterr(1, "verif font string can be at most 63 "
+                            "characters\n");
+                }
+                strcpy(fonts[VERIF_FONT],optarg);
+                break;
+            case 523:
+                if (strlen(optarg) > 63) {
+                    opterr(1, "wrong font string can be at most 63 "
+                            "characters\n");
+                }
+                strcpy(fonts[WRONG_FONT],optarg);
+                break;
+            case 524:
+                if (strlen(optarg) > 63) {
+                    opterr(1, "layout font string can be at most 63 characters\n");
+                }
+                strcpy(fonts[LAYOUT_FONT],optarg);
+                break;
+            case 525:
+                if (strlen(optarg) > 63) {
+                    opterr(1, "greeter font string can be at most 63 characters\n");
+                }
+                strcpy(fonts[GREETER_FONT],optarg);
+                break;
+
+			// Text size
+            case 530:
+                arg = optarg;
+                if (sscanf(arg, "%lf", &time_size) != 1)
+                    opterr(1, "timesize must be a number\n");
+                if (time_size < 1)
+                    opterr(1, "timesize must be larger than 0\n");
+                break;
+            case 531:
+                arg = optarg;
+                if (sscanf(arg, "%lf", &date_size) != 1)
+                    opterr(1, "datesize must be a number\n");
+                if (date_size < 1)
+                    opterr(1, "datesize must be larger than 0\n");
+                break;
+            case 532:
+                arg = optarg;
+                if (sscanf(arg, "%lf", &verif_size) != 1)
+                    opterr(1, "verifsize must be a number\n");
+                if (verif_size < 1) {
+                    fprintf(stderr, "verifsize must be a positive integer; ignoring...\n");
+                    verif_size = 28.0;
+                }
+                break;
+            case 533:
+                arg = optarg;
+                if (sscanf(arg, "%lf", &wrong_size) != 1)
+                    opterr(1, "wrongsize must be a number\n");
+                if (wrong_size < 1) {
+                    fprintf(stderr, "wrongsize must be a positive integer; ignoring...\n");
+                    wrong_size = 28.0;
+                }
+                break;
+            case 534:
+                arg = optarg;
+                if (sscanf(arg, "%lf", &layout_size) != 1)
+                    opterr(1, "layoutsize must be a number\n");
+                if (date_size < 1)
+                    opterr(1, "layoutsize must be larger than 0\n");
+                break;
+            case 535:
+                arg = optarg;
+                if (sscanf(arg, "%lf", &modifier_size) != 1)
+                    opterr(1, "modsize must be a number\n");
+                if (modifier_size < 1) {
+                    fprintf(stderr, "modsize must be a positive integer; ignoring...\n");
+                    modifier_size = 14.0;
+                }
+                break;
+            case 536:
+                arg = optarg;
+                if (sscanf(arg, "%lf", &greeter_size) != 1)
+                    opterr(1, "greetersize must be a number\n");
+                if (greeter_size < 1) {
+                    fprintf(stderr, "greetersize must be a positive integer; ignoring...\n");
+                    greeter_size = 14.0;
+                }
+                break;
+
+			// Positions
+            case 540:
+                //read in to time_x_expr and time_y_expr
+                if (strlen(optarg) > 31) {
+                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
+                    opterr(1, "time position string can be at most 31 characters\n");
+                }
+                arg = optarg;
+                if (sscanf(arg, "%30[^:]:%30[^:]", time_x_expr, time_y_expr) != 2) {
+                    opterr(1, "timepos must be of the form x:y\n");
+                }
+                break;
+            case 541:
+                //read in to date_x_expr and date_y_expr
+                if (strlen(optarg) > 31) {
+                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
+                    opterr(1, "date position string can be at most 31 characters\n");
+                }
+                arg = optarg;
+                if (sscanf(arg, "%30[^:]:%30[^:]", date_x_expr, date_y_expr) != 2) {
+                    opterr(1, "datepos must be of the form x:y\n");
+                }
+                break;
+            case 542:
+                // read in to time_x_expr and time_y_expr
+                if (strlen(optarg) > 31) {
+                    opterr(1, "verif position string can be at most 31 characters\n");
+                }
+                arg = optarg;
+                if (sscanf(arg, "%30[^:]:%30[^:]", verif_x_expr, verif_y_expr) != 2) {
+                    opterr(1, "verifpos must be of the form x:y\n");
+                }
+                break;
+            case 543:
+                if (strlen(optarg) > 31) {
+                    opterr(1, "\"wrong\" text position string can be at most 31 characters\n");
+                }
+                arg = optarg;
+                if (sscanf(arg, "%30[^:]:%30[^:]", wrong_x_expr, wrong_y_expr) != 2) {
+                    opterr(1, "verifpos must be of the form x:y\n");
+                }
+                break;
+            case 544:
+                if (strlen(optarg) > 31) {
+                    opterr(1, "layout position string can be at most 31 characters\n");
+                }
+                arg = optarg;
+                if (sscanf(arg, "%30[^:]:%30[^:]", layout_x_expr, layout_y_expr) != 2) {
+                    opterr(1, "layoutpos must be of the form x:y\n");
+                }
+                break;
+            case 545:
+                if (strlen(optarg) > 31) {
+                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
+                    opterr(1, "status position string can be at most 31 characters\n");
+                }
+                arg = optarg;
+                if (sscanf(arg, "%30[^:]:%30[^:]", status_x_expr, status_y_expr) != 2) {
+                    opterr(1, "statuspos must be of the form x:y\n");
+                }
+                break;
+            case 546:
+                if (strlen(optarg) > 31) {
+                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
+                    opterr(1, "modif position string can be at most 31 characters\n");
+                }
+                arg = optarg;
+                if (sscanf(arg, "%30[^:]:%30[^:]", modif_x_expr, modif_y_expr) != 2) {
+                    opterr(1, "modifpos must be of the form x:y\n");
+                }
+                break;
+            case 547:
+                if (strlen(optarg) > 31) {
+                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
+                    opterr(1, "indicator position string can be at most 31 characters\n");
+                }
+                arg = optarg;
+                if (sscanf(arg, "%30[^:]:%30[^:]", ind_x_expr, ind_y_expr) != 2) {
+                    opterr(1, "indpos must be of the form x:y\n");
+                }
+                break;
+            case 548:
+                if (strlen(optarg) > 31) {
+                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
+                    opterr(1, "indicator position string can be at most 31 characters\n");
+                }
+                arg = optarg;
+                if (sscanf(arg, "%30[^:]:%30[^:]", greeter_x_expr, greeter_y_expr) != 2) {
+                    opterr(1, "indpos must be of the form x:y\n");
+                }
+                break;
+
+            // text outline width
+            case 560:
+                parse_outline_width(timeoutlinewidth);
+                break;
+            case 561:
+                parse_outline_width(dateoutlinewidth);
+                break;
+            case 562:
+                parse_outline_width(verifoutlinewidth);
+                break;
+            case 563:
+                parse_outline_width(wrongoutlinewidth);
+                break;
+            case 564:
+                parse_outline_width(modifieroutlinewidth);
+                break;
+            case 565:
+                parse_outline_width(layoutoutlinewidth);
+                break;
+            case 566:
+                parse_outline_width(greeteroutlinewidth);
+                break;
+
+
+			// Pass keys
+			case 601:
+				pass_media_keys = true;
+				break;
+			case 602:
+				pass_screen_keys = true;
+				break;
+			case 603:
+				pass_power_keys = true;
+				break;
+			case 604:
+				pass_volume_keys = true;
+				break;
+            case 605:
+                special_passthrough = true;
+                break;
+
+			// Bar indicator
+            case 700:
+                bar_enabled = true;
+                break;
+            case 701:
+                opt = atoi(optarg);
+                switch(opt) {
+                    case BAR_REVERSED:
+                        bar_reversed = true;
+                        break;
+                    case BAR_BIDIRECTIONAL:
+                        bar_bidirectional = true;
+                        break;
+                    case BAR_DEFAULT:
+                    default:
+                        break;
+                }
+                break;
+            case 703:
+                arg = optarg;
+                if (strcmp(arg, "vertical") == 0)
+                    bar_orientation = BAR_VERT;
+                else if (strcmp(arg, "horizontal") == 0)
+                    bar_orientation = BAR_FLAT;
+                else
+                    opterr(1, "bar orientation must be \"vertical\" or \"horizontal\"\n");
+                break;
+            case 704:
+                bar_step = atoi(optarg);
+                if (bar_step < 1) bar_step = 15;
+                break;
+            case 705:
+                max_bar_height = atoi(optarg);
+                if (max_bar_height < 1) max_bar_height = 25;
+                break;
+            case 706:
+                bar_base_height = atoi(optarg);
+                if (bar_base_height < 1) bar_base_height = 25;
+                break;
+            case 707:
+                parse_color(bar_base_color);
+                break;
+            case 708:
+                opt = atoi(optarg);
+                if (opt > 0)
+                    bar_periodic_step = opt;
+                break;
+            case 709:
+                arg = optarg;
+                if (sscanf(arg, "%31[^:]:%31[^:]", bar_x_expr, bar_y_expr) < 1) {
+                    opterr(1, "bar-position must be a single number or of the form x:y with a max length of 31\n");
+                }
+                break;
+            case 710:
+                bar_count = atoi(optarg);
+                if (bar_count > MAX_BAR_COUNT || bar_count < MIN_BAR_COUNT) {
+                    opterr(1, "bar-count must be between %d and %d\n", MIN_BAR_COUNT, MAX_BAR_COUNT);
+                }
+                break;
+            case 711:
+                arg = optarg;
+                if (sscanf(arg, "%31s", bar_width_expr) != 1) {
+                    opterr(1, "missing argument for bar-total-width\n");
+                }
+                break;
+
+			// Misc
+            case 900:
+                redraw_thread = true;
+                break;
+            case 901:
+                arg = optarg;
+                refresh_rate = strtof(arg, NULL);
+                if (refresh_rate < 0.0) {
+                    fprintf(stderr, "The given refresh rate of %fs is less than zero seconds and was ignored.\n", refresh_rate);
+                    refresh_rate = 1.0;
+                }
+                break;
+            case 902:
+                composite = true;
+                break;
+            case 903:
+                slideshow_interval = atoi(optarg);
+
+                if (slideshow_interval < 0) {
+                    slideshow_interval = 10;
+                }
+                break;
+            case 904:
+                slideshow_random_selection = true;
+                break;
+            case 905:
+                no_verify = true;
+                break;
+            case 906:
+                api_enabled = true;
+                break;
+            case 907:
+                api_fifo_path = optarg;
+                break;
+            case 908:
+                api_force_redraw = true;
+                break;
+            case 998:
+                image_raw_format = strdup(optarg);
+                break;
+            case 999:
+                debug_mode = true;
+                break;
+            default:
+                if (api) return;
+                errx(EXIT_FAILURE, "Syntax: i3lock [-v] [-n] [-b] [-d] [-c color] [-u] [-p win|default]"
+                                   " [-i image.png] [-t] [-e] [-f]\n"
+                                   "Please see the manpage for a full list of arguments.");
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
     struct passwd *pw;
     char *username;
-    char *image_path = NULL;
-    char *image_raw_format = NULL;
 #ifndef __OpenBSD__
     int ret;
     struct pam_conv conv = {conv_callback, NULL};
 #endif
-    int curs_choice = CURS_NONE;
-    int o;
-    int longoptind = 0;
     struct option longopts[] = {
         {"version", no_argument, NULL, 'v'},
         {"nofork", no_argument, NULL, 'n'},
@@ -1600,7 +2264,9 @@ int main(int argc, char *argv[]) {
         {"refresh-rate", required_argument, NULL, 901},
         {"composite", no_argument, NULL, 902},
         {"no-verify", no_argument, NULL, 905},
-        {"enable-api", optional_argument, NULL, 906},
+        {"api-enable", no_argument, NULL, 906},
+        {"api-path", required_argument, NULL, 907},
+        {"api-redraw", no_argument, NULL, 908},
 
         // slideshow options
         {"slideshow-interval", required_argument, NULL, 903},
@@ -1616,656 +2282,8 @@ int main(int argc, char *argv[]) {
         errx(EXIT_FAILURE, "i3lock is a program for X11 and does not work on Wayland. Try https://github.com/swaywm/swaylock instead");
 
     char *optstring = "hvnbdc:p:ui:tCFLMeI:frsS:kB:m";
-    char *arg = NULL;
-    int opt = 0;
-    char padded[9] = "ffffffff"; \
 
-#define parse_color(acolor)\
-    arg = optarg;\
-    if (arg[0] == '#') arg++;\
-    if (strlen(arg) == 6) {\
-      /* If 6 digits given, assume RGB and pad 0xff for alpha */\
-      strncpy( padded, arg, 6 );\
-      arg = padded;\
-    }\
-    if (strlen(arg) != 8 || sscanf(arg, "%08[0-9a-fA-F]", acolor) != 1)\
-        errx(1, #acolor " is invalid, color must be given in 3 or 4-byte format: rrggbb[aa]\n");
-
-#define parse_outline_width(awidth)\
-    arg = optarg;\
-    if (sscanf(arg, "%lf", &awidth) != 1)\
-        errx(1, #awidth " must be a number\n");\
-    if (awidth < 0) {\
-        fprintf(stderr, #awidth " must be a positive double; ignoring...\n");\
-        awidth = 0;\
-    }
-
-    while ((o = getopt_long(argc, argv, optstring, longopts, &longoptind)) != -1) {
-        switch (o) {
-            case 'v':
-                errx(EXIT_SUCCESS, "version " I3LOCK_VERSION " © 2010 Michael Stapelberg, © 2015 Cassandra Fox, © 2021 Raymond Li");
-            case 'n':
-                dont_fork = true;
-                break;
-            case 'b':
-                beep = true;
-                break;
-            case 'd':
-                fprintf(stderr, "DPMS support has been removed from i3lock. Please see the manpage i3lock(1).\n");
-                break;
-            case 'I': {
-                fprintf(stderr, "Inactivity timeout only makes sense with DPMS, which was removed. Please see the manpage i3lock(1).\n");
-                break;
-            }
-            case 'u':
-                unlock_indicator = false;
-                break;
-            case 'i':
-                image_path = strdup(optarg);
-                break;
-            case 't':
-                if(bg_type != NONE) {
-                    errx(EXIT_FAILURE, "i3lock-color: Only one background type can be used.");
-                }
-                bg_type = TILE;
-                break;
-            case 'C':
-                if(bg_type != NONE) {
-                    errx(EXIT_FAILURE, "i3lock-color: Only one background type can be used.");
-                }
-                bg_type = CENTER;
-                break;
-            case 'F':
-                if(bg_type != NONE) {
-                    errx(EXIT_FAILURE, "i3lock-color: Only one background type can be used.");
-                }
-                bg_type = FILL;
-                break;
-            case 'L':
-                if(bg_type != NONE) {
-                    errx(EXIT_FAILURE, "i3lock-color: Only one background type can be used.");
-                }
-                bg_type = SCALE;
-                break;
-            case 'M':
-                if(bg_type != NONE) {
-                    errx(EXIT_FAILURE, "i3lock-color: Only one background type can be used.");
-                }
-                bg_type = MAX;
-                break;
-            case 'p':
-                if (!strcmp(optarg, "win")) {
-                    curs_choice = CURS_WIN;
-                } else if (!strcmp(optarg, "default")) {
-                    curs_choice = CURS_DEFAULT;
-                } else {
-                    errx(EXIT_FAILURE, "i3lock: Invalid pointer type given. Expected one of \"win\" or \"default\".");
-                }
-                break;
-            case 'e':
-                ignore_empty_password = true;
-                break;
-            case 'f':
-                show_failed_attempts = true;
-                break;
-            case 'r':
-                if (internal_line_source != 0) {
-                  errx(EXIT_FAILURE, "i3lock-color: Options line-uses-ring and line-uses-inside conflict.");
-                }
-                internal_line_source = 1; //sets the line drawn inside to use the inside color when drawn
-                break;
-            case 's':
-                if (internal_line_source != 0) {
-                  errx(EXIT_FAILURE, "i3lock-color: Options line-uses-ring and line-uses-inside conflict.");
-                }
-                internal_line_source = 2;
-                break;
-            case 'S':
-                screen_number = atoi(optarg);
-                break;
-
-            case 'k':
-                show_clock = true;
-                break;
-            case 'B':
-                blur = true;
-                blur_sigma = atoi(optarg);
-                break;
-
-            // Begin colors
-            case 'c':
-                parse_color(color);
-                break;
-            case 300:
-                parse_color(insidevercolor);
-                break;
-            case 301:
-                parse_color(insidewrongcolor);
-                break;
-            case 302:
-                parse_color(insidecolor);
-                break;
-            case 303:
-                parse_color(ringvercolor);
-                break;
-            case 304:
-                parse_color(ringwrongcolor);
-                break;
-            case 305:
-                parse_color(ringcolor);
-                break;
-            case 306:
-                parse_color(linecolor);
-                break;
-            case 307:
-                parse_color(verifcolor);
-                break;
-            case 308:
-                parse_color(wrongcolor);
-                break;
-            case 309:
-                parse_color(layoutcolor);
-                break;
-            case 310:
-                parse_color(timecolor);
-                break;
-            case 311:
-                parse_color(datecolor);
-                break;
-            case 312:
-                parse_color(keyhlcolor);
-                break;
-            case 313:
-                parse_color(bshlcolor);
-                break;
-            case 314:
-                parse_color(separatorcolor);
-                break;
-            case 315:
-                parse_color(greetercolor);
-                break;
-            case  316:
-                parse_color(verifoutlinecolor);
-                break;
-            case  317:
-                parse_color(wrongoutlinecolor);
-                break;
-            case  318:
-                parse_color(layoutoutlinecolor);
-                break;
-            case  319:
-                parse_color(timeoutlinecolor);
-                break;
-            case  320:
-                parse_color(dateoutlinecolor);
-                break;
-            case  321:
-                parse_color(greeteroutlinecolor);
-                break;
-            case  322:
-                parse_color(modifcolor);
-                break;
-            case  323:
-                parse_color(modifoutlinecolor);
-                break;
-
-
-			// General indicator opts
-            case 400:
-                show_clock = true;
-                always_show_clock = true;
-                break;
-            case 401:
-                show_indicator = true;
-                break;
-            case 402:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &circle_radius) != 1)
-                    errx(1, "radius must be a number\n");
-                if (circle_radius < 1) {
-                    fprintf(stderr, "radius must be a positive integer; ignoring...\n");
-                    circle_radius = 90.0;
-                }
-                break;
-            case 403:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &ring_width) != 1)
-                    errx(1, "ring-width must be a number\n");
-                if (ring_width < 1.0) {
-                    fprintf(stderr, "ring-width must be a positive float; ignoring...\n");
-                    ring_width = 7.0;
-                }
-                break;
-
-			// Alignment stuff
-            case 500:
-                opt = atoi(optarg);
-                if (opt < 0 || opt > 2) opt = 0;
-                time_align = opt;
-                break;
-            case 501:
-                opt = atoi(optarg);
-                if (opt < 0 || opt > 2) opt = 0;
-                date_align = opt;
-                break;
-            case 502:
-                opt = atoi(optarg);
-                if (opt < 0 || opt > 2) opt = 0;
-                verif_align = opt;
-                break;
-            case 503:
-                opt = atoi(optarg);
-                if (opt < 0 || opt > 2) opt = 0;
-                wrong_align = opt;
-                break;
-            case 504:
-                opt = atoi(optarg);
-                if (opt < 0 || opt > 2) opt = 0;
-                layout_align = opt;
-                break;
-            case 505:
-                opt = atoi(optarg);
-                if (opt < 0 || opt > 2) opt = 0;
-                modif_align = opt;
-                break;
-            case 506:
-                opt = atoi(optarg);
-                if (opt < 0 || opt > 2) opt = 0;
-                greeter_align = opt;
-                break;
-
-			// String stuff
-            case 510:
-                if (strlen(optarg) > 31) {
-                    errx(1, "time format string can be at most 31 characters\n");
-                }
-                strcpy(time_format,optarg);
-                break;
-            case 511:
-                if (strlen(optarg) > 31) {
-                    errx(1, "time format string can be at most 31 characters\n");
-                }
-                strcpy(date_format,optarg);
-                break;
-            case 512:
-                verif_text = optarg;
-                break;
-            case 513:
-                wrong_text = optarg;
-                break;
-            case 514:
-                // if layout is NULL, do nothing
-                // if not NULL, attempt to display stuff
-                // need to code some sane defaults for it
-                keylayout_mode = atoi(optarg);
-                break;
-            case 515:
-                noinput_text = optarg;
-                break;
-            case 516:
-                lock_text = optarg;
-                break;
-            case 517:
-                lock_failed_text = optarg;
-                break;
-            case 518:
-                greeter_text = optarg;
-                break;
-            case 519:
-                show_modkey_text = false;
-                break;
-
-			// Font stuff
-            case 520:
-                if (strlen(optarg) > 63) {
-                    errx(1, "time font string can be at most 63 characters\n");
-                }
-                strcpy(fonts[TIME_FONT],optarg);
-                break;
-            case 521:
-                if (strlen(optarg) > 63) {
-                    errx(1, "date font string can be at most 63 characters\n");
-                }
-                strcpy(fonts[DATE_FONT],optarg);
-                break;
-            case 522:
-                if (strlen(optarg) > 63) {
-                    errx(1, "verif font string can be at most 63 "
-                            "characters\n");
-                }
-                strcpy(fonts[VERIF_FONT],optarg);
-                break;
-            case 523:
-                if (strlen(optarg) > 63) {
-                    errx(1, "wrong font string can be at most 63 "
-                            "characters\n");
-                }
-                strcpy(fonts[WRONG_FONT],optarg);
-                break;
-            case 524:
-                if (strlen(optarg) > 63) {
-                    errx(1, "layout font string can be at most 63 characters\n");
-                }
-                strcpy(fonts[LAYOUT_FONT],optarg);
-                break;
-            case 525:
-                if (strlen(optarg) > 63) {
-                    errx(1, "greeter font string can be at most 63 characters\n");
-                }
-                strcpy(fonts[GREETER_FONT],optarg);
-                break;
-
-			// Text size
-            case 530:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &time_size) != 1)
-                    errx(1, "timesize must be a number\n");
-                if (time_size < 1)
-                    errx(1, "timesize must be larger than 0\n");
-                break;
-            case 531:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &date_size) != 1)
-                    errx(1, "datesize must be a number\n");
-                if (date_size < 1)
-                    errx(1, "datesize must be larger than 0\n");
-                break;
-            case 532:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &verif_size) != 1)
-                    errx(1, "verifsize must be a number\n");
-                if (verif_size < 1) {
-                    fprintf(stderr, "verifsize must be a positive integer; ignoring...\n");
-                    verif_size = 28.0;
-                }
-                break;
-            case 533:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &wrong_size) != 1)
-                    errx(1, "wrongsize must be a number\n");
-                if (wrong_size < 1) {
-                    fprintf(stderr, "wrongsize must be a positive integer; ignoring...\n");
-                    wrong_size = 28.0;
-                }
-                break;
-            case 534:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &layout_size) != 1)
-                    errx(1, "layoutsize must be a number\n");
-                if (date_size < 1)
-                    errx(1, "layoutsize must be larger than 0\n");
-                break;
-            case 535:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &modifier_size) != 1)
-                    errx(1, "modsize must be a number\n");
-                if (modifier_size < 1) {
-                    fprintf(stderr, "modsize must be a positive integer; ignoring...\n");
-                    modifier_size = 14.0;
-                }
-                break;
-            case 536:
-                arg = optarg;
-                if (sscanf(arg, "%lf", &greeter_size) != 1)
-                    errx(1, "greetersize must be a number\n");
-                if (greeter_size < 1) {
-                    fprintf(stderr, "greetersize must be a positive integer; ignoring...\n");
-                    greeter_size = 14.0;
-                }
-                break;
-
-			// Positions
-            case 540:
-                //read in to time_x_expr and time_y_expr
-                if (strlen(optarg) > 31) {
-                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                    errx(1, "time position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", time_x_expr, time_y_expr) != 2) {
-                    errx(1, "timepos must be of the form x:y\n");
-                }
-                break;
-            case 541:
-                //read in to date_x_expr and date_y_expr
-                if (strlen(optarg) > 31) {
-                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                    errx(1, "date position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", date_x_expr, date_y_expr) != 2) {
-                    errx(1, "datepos must be of the form x:y\n");
-                }
-                break;
-            case 542:
-                // read in to time_x_expr and time_y_expr
-                if (strlen(optarg) > 31) {
-                    errx(1, "verif position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", verif_x_expr, verif_y_expr) != 2) {
-                    errx(1, "verifpos must be of the form x:y\n");
-                }
-                break;
-            case 543:
-                if (strlen(optarg) > 31) {
-                    errx(1, "\"wrong\" text position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", wrong_x_expr, wrong_y_expr) != 2) {
-                    errx(1, "verifpos must be of the form x:y\n");
-                }
-                break;
-            case 544:
-                if (strlen(optarg) > 31) {
-                    errx(1, "layout position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", layout_x_expr, layout_y_expr) != 2) {
-                    errx(1, "layoutpos must be of the form x:y\n");
-                }
-                break;
-            case 545:
-                if (strlen(optarg) > 31) {
-                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                    errx(1, "status position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", status_x_expr, status_y_expr) != 2) {
-                    errx(1, "statuspos must be of the form x:y\n");
-                }
-                break;
-            case 546:
-                if (strlen(optarg) > 31) {
-                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                    errx(1, "modif position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", modif_x_expr, modif_y_expr) != 2) {
-                    errx(1, "modifpos must be of the form x:y\n");
-                }
-                break;
-            case 547:
-                if (strlen(optarg) > 31) {
-                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                    errx(1, "indicator position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", ind_x_expr, ind_y_expr) != 2) {
-                    errx(1, "indpos must be of the form x:y\n");
-                }
-                break;
-            case 548:
-                if (strlen(optarg) > 31) {
-                    // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                    errx(1, "indicator position string can be at most 31 characters\n");
-                }
-                arg = optarg;
-                if (sscanf(arg, "%30[^:]:%30[^:]", greeter_x_expr, greeter_y_expr) != 2) {
-                    errx(1, "indpos must be of the form x:y\n");
-                }
-                break;
-
-            // text outline width
-            case 560:
-                parse_outline_width(timeoutlinewidth);
-                break;
-            case 561:
-                parse_outline_width(dateoutlinewidth);
-                break;
-            case 562:
-                parse_outline_width(verifoutlinewidth);
-                break;
-            case 563:
-                parse_outline_width(wrongoutlinewidth);
-                break;
-            case 564:
-                parse_outline_width(modifieroutlinewidth);
-                break;
-            case 565:
-                parse_outline_width(layoutoutlinewidth);
-                break;
-            case 566:
-                parse_outline_width(greeteroutlinewidth);
-                break;
-
-
-			// Pass keys
-			case 601:
-				pass_media_keys = true;
-				break;
-			case 602:
-				pass_screen_keys = true;
-				break;
-			case 603:
-				pass_power_keys = true;
-				break;
-			case 604:
-				pass_volume_keys = true;
-				break;
-            case 605:
-                special_passthrough = true;
-                break;
-
-			// Bar indicator
-            case 700:
-                bar_enabled = true;
-                break;
-            case 701:
-                opt = atoi(optarg);
-                switch(opt) {
-                    case BAR_REVERSED:
-                        bar_reversed = true;
-                        break;
-                    case BAR_BIDIRECTIONAL:
-                        bar_bidirectional = true;
-                        break;
-                    case BAR_DEFAULT:
-                    default:
-                        break;
-                }
-                break;
-            case 703:
-                arg = optarg;
-                if (strcmp(arg, "vertical") == 0)
-                    bar_orientation = BAR_VERT;
-                else if (strcmp(arg, "horizontal") == 0)
-                    bar_orientation = BAR_FLAT;
-                else
-                    errx(1, "bar orientation must be \"vertical\" or \"horizontal\"\n");
-                break;
-            case 704:
-                bar_step = atoi(optarg);
-                if (bar_step < 1) bar_step = 15;
-                break;
-            case 705:
-                max_bar_height = atoi(optarg);
-                if (max_bar_height < 1) max_bar_height = 25;
-                break;
-            case 706:
-                bar_base_height = atoi(optarg);
-                if (bar_base_height < 1) bar_base_height = 25;
-                break;
-            case 707:
-                parse_color(bar_base_color);
-                break;
-            case 708:
-                opt = atoi(optarg);
-                if (opt > 0)
-                    bar_periodic_step = opt;
-                break;
-            case 709:
-                arg = optarg;
-                if (sscanf(arg, "%31[^:]:%31[^:]", bar_x_expr, bar_y_expr) < 1) {
-                    errx(1, "bar-position must be a single number or of the form x:y with a max length of 31\n");
-                }
-                break;
-            case 710:
-                bar_count = atoi(optarg);
-                if (bar_count > MAX_BAR_COUNT || bar_count < MIN_BAR_COUNT) {
-                    errx(1, "bar-count must be between %d and %d\n", MIN_BAR_COUNT, MAX_BAR_COUNT);
-                }
-                break;
-            case 711:
-                arg = optarg;
-                if (sscanf(arg, "%31s", bar_width_expr) != 1) {
-                    errx(1, "missing argument for bar-total-width\n");
-                }
-                break;
-
-			// Misc
-            case 900:
-                redraw_thread = true;
-                break;
-            case 901:
-                arg = optarg;
-                refresh_rate = strtof(arg, NULL);
-                if (refresh_rate < 0.0) {
-                    fprintf(stderr, "The given refresh rate of %fs is less than zero seconds and was ignored.\n", refresh_rate);
-                    refresh_rate = 1.0;
-                }
-                break;
-            case 902:
-                composite = true;
-                break;
-            case 903:
-                slideshow_interval = atoi(optarg);
-
-                if (slideshow_interval < 0) {
-                    slideshow_interval = 10;
-                }
-                break;
-            case 904:
-                slideshow_random_selection = true;
-                break;
-            case 905:
-                no_verify = true;
-                break;
-            case 906:
-                api_enabled = true;
-                if (optarg == NULL && argv[optind] != NULL &&
-                        argv[optind][0] != '-') {
-                    if (argv[optind][0] != ' ' && argv[optind][0] != '\0')
-                        api_fifo_path = strdup(argv[optind]);
-                    ++optind;
-                } else {
-                    if (optarg != NULL) {
-                        api_fifo_path = strdup(optarg);
-                    }
-                }
-                break;
-            case 998:
-                image_raw_format = strdup(optarg);
-                break;
-            case 999:
-                debug_mode = true;
-                break;
-            default:
-                errx(EXIT_FAILURE, "Syntax: i3lock [-v] [-n] [-b] [-d] [-c color] [-u] [-p win|default]"
-                                   " [-i image.png] [-t] [-e] [-f]\n"
-                                   "Please see the manpage for a full list of arguments.");
-        }
-    }
+    update_arguments(argc, argv, longopts, optstring, false);
 
     /* We need (relatively) random numbers for highlighting a random part of
      * the unlock indicator upon keypresses. */
@@ -2520,6 +2538,7 @@ int main(int argc, char *argv[]) {
     xcb_destroy_window(conn, win);
     set_focused_window(conn, screen->root, stolen_focus);
     xcb_aux_sync(conn);
+    pthread_mutex_destroy(&redraw_mutex);
     remove(api_fifo_path);
 
     return 0;
