@@ -2379,7 +2379,12 @@ int main(int argc, char *argv[]) {
         //free(image_path);
     }
 
-    free(image_raw_format);
+    //free(image_raw_format);
+
+    signal(SIGUSR1, sig_handler);
+
+    xcb_pixmap_t* blur_pixmap = NULL;
+      
 
     if (blur) {
         xcb_pixmap_t bg_pixmap = capture_bg_pixmap(conn, screen, last_resolution);
