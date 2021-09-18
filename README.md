@@ -11,19 +11,22 @@
 [![Latest release](https://img.shields.io/github/release-date/Raymo111/i3lock-color?label=latest%20release)](https://github.com/Raymo111/i3lock-color/releases/latest)
 [![Commits](https://img.shields.io/github/commits-since/Raymo111/i3lock-color/latest?include_prereleases&sort=semver)](https://github.com/Raymo111/i3lock-color/commits/master)
 ![Latest commit](https://img.shields.io/github/last-commit/Raymo111/i3lock-color)
-<!--![Arch Linux package](https://img.shields.io/archlinux/v/community/x86_64/i3lock-color?logo=arch%20linux&label=Community%20version)-->
-[![AUR release ver](https://img.shields.io/aur/version/i3lock-color?label=AUR%20release%20ver)](https://aur.archlinux.org/packages/i3lock-color/)
-[![AUR git ver](https://img.shields.io/aur/version/i3lock-color-git?label=AUR%20git%20ver)](https://aur.archlinux.org/packages/i3lock-color-git/)
-![AUR votes](https://img.shields.io/aur/votes/i3lock-color-git)
-[![GitHub forks](https://img.shields.io/github/forks/Raymo111/i3lock-color)](https://github.com/Raymo111/i3lock-color/network/members)
-[![GitHub stars](https://img.shields.io/github/stars/Raymo111/i3lock-color)](https://github.com/Raymo111/i3lock-color/stargazers)
-[![GitHub watchers](https://img.shields.io/github/watchers/Raymo111/i3lock-color)](https://github.com/Raymo111/i3lock-color/watchers)
+[![AUR release ver](https://img.shields.io/aur/version/i3lock-color?label=AUR%20release%20ver&logo=ArchLinux)](https://aur.archlinux.org/packages/i3lock-color/)
+[![AUR git ver](https://img.shields.io/aur/version/i3lock-color-git?label=AUR%20git%20ver&logo=ArchLinux)](https://aur.archlinux.org/packages/i3lock-color-git/)
+![AUR votes](https://img.shields.io/aur/votes/i3lock-color-git?logo=ArchLinux)
+[![GitHub forks](https://img.shields.io/github/forks/Raymo111/i3lock-color?logo=GitHub)](https://github.com/Raymo111/i3lock-color/network/members)
+[![GitHub stars](https://img.shields.io/github/stars/Raymo111/i3lock-color?logo=GitHub)](https://github.com/Raymo111/i3lock-color/stargazers)
+[![GitHub watchers](https://img.shields.io/github/watchers/Raymo111/i3lock-color?logo=GitHub)](https://github.com/Raymo111/i3lock-color/watchers)
+[![Discord server](https://img.shields.io/discord/878461145197977630?label=Discord&logo=Discord)](https://discord.gg/FzVPghyDt2)
 ![Maintained](https://img.shields.io/maintenance/yes/2021)
+<!--![Arch Linux package](https://img.shields.io/archlinux/v/community/x86_64/i3lock-color?logo=arch%20linux&label=Community%20version)-->
 
 ### The world's most popular non-default computer lockscreen.
 **A modern version of i3lock with color functionality and other features.**
 
 ![i3lock-color in action](examples/screenshot.png "Screenshot sample")
+
+**NEW: Official Discord server at https://discord.gg/FzVPghyDt2**
 
 i3lock is a simple screen locker like slock. After starting it, you will see a white screen (you can configure the color/an image). You can return to your screen by entering your password.
 
