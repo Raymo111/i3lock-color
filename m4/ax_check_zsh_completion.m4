@@ -24,7 +24,7 @@ AC_DEFUN([AX_CHECK_ZSH_COMPLETION], [
       AC_CHECK_PROG([ZSH_AVAILABLE], [zsh], [yes], [no])
 
       AS_IF([test "$ZSH_AVAILABLE" = "yes"], [
-          ZSH_COMPLETION_DIR="/usr/share/zsh/vendor-completions"
+          ZSH_COMPLETION_DIR="$datadir/zsh/vendor-completions"
           ], [
           ZSH_COMPLETION_DIR=""
           ])

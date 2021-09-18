@@ -25,11 +25,20 @@ endif
 
 install-data-hook:
 if ENABLE_BASH_COMPLETION
-	mv -f ${BASH_COMPLETION_DIR}/i3lock-bash ${BASH_COMPLETION_DIR}/i3lock
+	test -f "${BASH_COMPLETION_DIR}/i3lock-bash" && mv -f "${BASH_COMPLETION_DIR}/i3lock-bash" "${BASH_COMPLETION_DIR}/i3lock" || true
 endif
 if ENABLE_ZSH_COMPLETION
-	mv -f ${ZSH_COMPLETION_DIR}/i3lock-zsh ${ZSH_COMPLETION_DIR}/_i3lock
+	test -f "${ZSH_COMPLETION_DIR}/i3lock-zsh" && mv -f "${ZSH_COMPLETION_DIR}/i3lock-zsh" "${ZSH_COMPLETION_DIR}/_i3lock" || true
 endif
+
+uninstall-hook:
+if ENABLE_BASH_COMPLETION
+	rm -f ${BASH_COMPLETION_DIR}/i3lock
+endif
+if ENABLE_ZSH_COMPLETION
+	rm -f ${ZSH_COMPLETION_DIR}/_i3lock
+endif
+
 
 AM_CPPFLAGS = \
 	@AX_EXTEND_SRCDIR_CPPFLAGS@
