@@ -14,6 +14,9 @@ _i3lock() {
     "(--color -c)"{--color,-c}"[Turn the screen into the given hex color]:hex:->hex"
     "(--tiling -t)"{--tiling,-t}"[Image will be displayed tiled all over the screen]"
     "(--centered -C)"{--centered,-C}"[Image will be displayed centered on the screen]"
+    "(--fill -F)"{--fill,-F}"[Image will fill all over the screen]"
+    "(--max -M)"{--max,-M}"[Image will fit the screen at width or height]"
+    "(--scale -L)"{--scale,-L}"[Image will be stretched on the screen]"
     "(--pointer -p)"{--pointer,-p}"[Sets mouse pointer type]:pointer:(win default)"
     "(--ignore-empty-password -e)"{--ignore-empty-password,-e}"[Do not validate empty password]"
     "(--show-failed-attempts -f)"{--show-failed-attempts,-f}"[Show the number of failed attemps]"
@@ -88,7 +91,7 @@ _i3lock() {
     "--bar-base-width[The thickness of the \"base\" bar that all the bar originate from]:float:"
     "--bar-color[Sets the default color of the bar base]:hex:->hex"
     "--bar-periodic-step[The value by which the bars decrease each time the screen is redrawn]:int:"
-    "--bar-pos[Sets the bar position]:str:"
+    "--bar-pos[Sets the bar position]:pos:->bar_pos"
     "--bar-count[Sets the number of minibars to draw on each screen]:int:"
     "--bar-total-width[The total width of the bar]:float:"
     # Extra configs
@@ -97,7 +100,7 @@ _i3lock() {
     "--composite"
     "--no-verify[Do not verify the password provided by the user and unlock inmediately]"
     # Slideshow
-    "--slideshow-interval[The interval to wait until switching to the nex image]"
+    "--slideshow-interval[The interval to wait until switching to the nex image]:double:"
     "--slideshow-random-selection[Randomize the order of the images]"
 
 
@@ -148,6 +151,15 @@ _i3lock() {
 
       _message "\"x position:y position\""
       _message -e "normal" "All the variables from --ind-pos and --time-pos may be used"
+      ;;
+    bar_pos)
+      zstyle ':completion:*:*:i3lock:*:normal' format '%d'
+      zstyle ':completion:*:*:i3lock:*:descriptions' format '%B%d%b'
+
+      _message "\"x position:y position\""
+      _message -e "normal" "All the variables from --ind-pos and --time-pos may be used"
+      _message -e "normal" "If only one number is provided, sets the vertical offset from the top or left edge"
+      _message -e "normal" "If two numbers are provided, sets the starting position of the bar"
       ;;
 
 
