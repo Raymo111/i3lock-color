@@ -124,6 +124,9 @@ AX_APPEND_FLAG([-pthread], [AM_CFLAGS])
 AX_CHECK_COMPILE_FLAG([-Wunused-value], [AX_APPEND_FLAG([-Wunused-value], [AM_CFLAGS])])
 AC_SUBST(AM_CFLAGS)
 
+AX_CHECK_BASH_COMPLETION
+AX_CHECK_ZSH_COMPLETION
+
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h float.h inttypes.h limits.h locale.h netinet/in.h paths.h stddef.h stdint.h stdlib.h string.h sys/param.h sys/socket.h sys/time.h unistd.h], , [AC_MSG_FAILURE([cannot find the $ac_header header, which i3lock requires])])
 
