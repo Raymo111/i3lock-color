@@ -1441,7 +1441,6 @@ bool load_slideshow_images(const char *path) {
         strcat(path_to_image, dir->d_name);
 
         img_slideshow[file_count] = strdup(path_to_image);
-        printf("Adding: \"%s\" on %d\n", path_to_image, file_count);
 
         if (img_slideshow[file_count] != NULL) {
             ++file_count;

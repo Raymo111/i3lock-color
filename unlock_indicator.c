@@ -69,6 +69,7 @@ extern cairo_surface_t *blur_bg_img;
 extern int slideshow_image_count;
 extern int slideshow_interval;
 extern bool slideshow_random_selection;
+int slideshow_image_now = 0;
 
 unsigned long lastCheck;
 
@@ -693,12 +694,12 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
             if (slideshow_random_selection) {
                 img = load_image(img_slideshow[rand() % slideshow_image_count]);
             } else {
-                img = load_image(img_slideshow[current_slideshow_index++]);
-
-                if (current_slideshow_index >= slideshow_image_count) {
-                    current_slideshow_index = 0;
-                    load_slideshow_images(slideshow_path);
-                }
+                img = load_image(img_slideshow[current_slideshow_index]);
+            }
+            current_slideshow_index++;
+            if (current_slideshow_index >= slideshow_image_count) {
+                current_slideshow_index = 0;
+                load_slideshow_images(slideshow_path);
             }
             lastCheck = now;
         }
