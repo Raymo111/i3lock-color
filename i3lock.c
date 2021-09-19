@@ -172,7 +172,7 @@ char verif_y_expr[32] = "iy\0";
 char wrong_x_expr[32] = "ix\0";
 char wrong_y_expr[32] = "iy\0";
 char greeter_x_expr[32] = "ix\0";
-char greeter_y_expr[32] = "ix\0";
+char greeter_y_expr[32] = "iy\0";
 
 double time_size = 32.0;
 double date_size = 14.0;
@@ -1902,7 +1902,7 @@ void update_arguments(int argc, char *argv[], struct option longopts[], char opt
                 }
                 arg = optarg;
                 if (sscanf(arg, "%30[^:]:%30[^:]", wrong_x_expr, wrong_y_expr) != 2) {
-                    opterr(1, "verifpos must be of the form x:y\n");
+                    opterr(1, "wrongpos must be of the form x:y\n");
                 }
                 break;
             case 544:
@@ -1947,11 +1947,11 @@ void update_arguments(int argc, char *argv[], struct option longopts[], char opt
             case 548:
                 if (strlen(optarg) > 31) {
                     // this is overly restrictive since both the x and y string buffers have size 32, but it's easier to check.
-                    opterr(1, "indicator position string can be at most 31 characters\n");
+                    opterr(1, "greeter position string can be at most 31 characters\n");
                 }
                 arg = optarg;
                 if (sscanf(arg, "%30[^:]:%30[^:]", greeter_x_expr, greeter_y_expr) != 2) {
-                    opterr(1, "indpos must be of the form x:y\n");
+                    opterr(1, "greeterpos must be of the form x:y\n");
                 }
                 break;
 
