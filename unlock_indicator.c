@@ -373,13 +373,21 @@ static void draw_text_with_cc(cairo_t *ctx, text_t text, double start_x) {
                 if (x_offset < 0 && x_offset > -nglyphs) {
                     x = glyphs[nglyphs+x_offset].x;
                 } else if (x_offset > 0) {
-                    x = glyphs[nglyphs - 1].x + x_offset * te.x_advance;
+                    if (nglyphs >= 1) { // the case is some leading control chars.(although there is none now)
+                        x = glyphs[nglyphs - 1].x + x_offset * te.x_advance;
+                    } else { // deal the leading control chars.
+                        x += x_offset * te.x_advance;
+                    }
                 }
             } else if (control_characters[cur_cc].x_behavior == CC_POS_RESET) {
                 x = start_x;
             } else if (control_characters[cur_cc].x_behavior == CC_POS_TAB) {
-                int advance = control_characters[cur_cc].x_behavior_arg - ((nglyphs - 1) % control_characters[cur_cc].x_behavior_arg);
-                x = glyphs[nglyphs - 1].x + advance * te.x_advance;
+                if (nglyphs > 0) { // there may be leading tab, such as '\t\t' or '\n\t'
+                    int advance = control_characters[cur_cc].x_behavior_arg - ((nglyphs - 1) % control_characters[cur_cc].x_behavior_arg);
+                    x = glyphs[nglyphs - 1].x + advance * te.x_advance;
+                } else { // deal the leading tab.
+                    x += control_characters[cur_cc].x_behavior_arg * te.x_advance;
+                }
             }
             if (control_characters[cur_cc].y_behavior == CC_POS_CHANGE) {
                 lineno += control_characters[cur_cc].y_behavior_arg;
