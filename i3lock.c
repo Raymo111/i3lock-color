@@ -2518,7 +2518,7 @@ int main(int argc, char *argv[]) {
         }
     }
     if (api_enabled) {
-        (void) pthread_create(&api_thread, NULL, listen_api, NULL);
+        (void) pthread_create(&api_thread, NULL, listen_api, longopts);
     }
     ev_loop(main_loop, 0);
 

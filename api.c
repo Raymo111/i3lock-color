@@ -173,133 +173,13 @@ extern char *image_raw_format;
 
 int is_directory(const char *path);
 
+struct option *api_options;
+
 static void update_api(int argc, char *argv[]) {
-    struct option longopts[] = {
-        {"color", required_argument, NULL, 'c'},
-        {"no-unlock-indicator", no_argument, NULL, 'u'},
-        {"image", required_argument, NULL, 'i'},
-        {"raw", required_argument, NULL, 998},
-        {"tiling", no_argument, NULL, 't'},
-        {"centered", no_argument, NULL, 'C'},
-        {"fill", no_argument, NULL, 'F'},
-        {"scale", no_argument, NULL, 'L'},
-        {"max", no_argument, NULL, 'M'},
-        {"blur", required_argument, NULL, 'B'},
-
-        // options for unlock indicator colors
-        {"insidever-color", required_argument, NULL, 300},
-        {"insidewrong-color", required_argument, NULL, 301},
-        {"inside-color", required_argument, NULL, 302},
-        {"ringver-color", required_argument, NULL, 303},
-        {"ringwrong-color", required_argument, NULL, 304},
-        {"ring-color", required_argument, NULL, 305},
-        {"line-color", required_argument, NULL, 306},
-        {"verif-color", required_argument, NULL, 307},
-        {"wrong-color", required_argument, NULL, 308},
-        {"layout-color", required_argument, NULL, 309},
-        {"time-color", required_argument, NULL, 310},
-        {"date-color", required_argument, NULL, 311},
-        {"modif-color", required_argument, NULL, 322},
-        {"keyhl-color", required_argument, NULL, 312},
-        {"bshl-color", required_argument, NULL, 313},
-        {"separator-color", required_argument, NULL, 314},
-        {"greeter-color", required_argument, NULL, 315},
-
-        // text outline colors
-        {"verifoutline-color", required_argument, NULL, 316},
-        {"wrongoutline-color", required_argument, NULL, 317},
-        {"layoutoutline-color", required_argument, NULL, 318},
-        {"timeoutline-color", required_argument, NULL, 319},
-        {"dateoutline-color", required_argument, NULL, 320},
-        {"greeteroutline-color", required_argument, NULL, 321},
-        {"modifoutline-color", required_argument, NULL, 323},
-
-        {"line-uses-ring", no_argument, NULL, 'r'},
-        {"line-uses-inside", no_argument, NULL, 's'},
-
-        {"clock", no_argument, NULL, 'k'},
-        {"force-clock", no_argument, NULL, 400},
-        {"indicator", no_argument, NULL, 401},
-        {"radius", required_argument, NULL, 402},
-        {"ring-width", required_argument, NULL, 403},
-
-        // alignment
-        {"time-align", required_argument, NULL, 500},
-        {"date-align", required_argument, NULL, 501},
-        {"verif-align", required_argument, NULL, 502},
-        {"wrong-align", required_argument, NULL, 503},
-        {"layout-align", required_argument, NULL, 504},
-        {"modif-align", required_argument, NULL, 505},
-        {"greeter-align", required_argument, NULL, 506},
-
-        // string stuff
-        {"time-str", required_argument, NULL, 510},
-        {"date-str", required_argument, NULL, 511},
-        {"verif-text", required_argument, NULL, 512},
-        {"wrong-text", required_argument, NULL, 513},
-        {"keylayout", required_argument, NULL, 514},
-        {"noinput-text", required_argument, NULL, 515},
-        {"lock-text", required_argument, NULL, 516},
-        {"lockfailed-text", required_argument, NULL, 517},
-        {"greeter-text", required_argument, NULL, 518},
-        {"no-modkey-text", no_argument, NULL, 519},
-
-        // fonts
-        {"time-font", required_argument, NULL, 520},
-        {"date-font", required_argument, NULL, 521},
-        {"verif-font", required_argument, NULL, 522},
-        {"wrong-font", required_argument, NULL, 523},
-        {"layout-font", required_argument, NULL, 524},
-        {"greeter-font", required_argument, NULL, 525},
-
-        // text size
-        {"time-size", required_argument, NULL, 530},
-        {"date-size", required_argument, NULL, 531},
-        {"verif-size", required_argument, NULL, 532},
-        {"wrong-size", required_argument, NULL, 533},
-        {"layout-size", required_argument, NULL, 534},
-        {"modif-size", required_argument, NULL, 535},
-        {"greeter-size", required_argument, NULL, 536},
-
-        // text/indicator positioning
-        {"time-pos", required_argument, NULL, 540},
-        {"date-pos", required_argument, NULL, 541},
-        {"verif-pos", required_argument, NULL, 542},
-        {"wrong-pos", required_argument, NULL, 543},
-        {"layout-pos", required_argument, NULL, 544},
-        {"status-pos", required_argument, NULL, 545},
-        {"modif-pos", required_argument, NULL, 546},
-        {"ind-pos", required_argument, NULL, 547},
-        {"greeter-pos", required_argument, NULL, 548},
-
-        // text outline width
-        {"timeoutline-width", required_argument, NULL, 560},
-        {"dateoutline-width", required_argument, NULL, 561},
-        {"verifoutline-width", required_argument, NULL, 562},
-        {"wrongoutline-width", required_argument, NULL, 563},
-        {"modifieroutline-width", required_argument, NULL, 564},
-        {"layoutoutline-width", required_argument, NULL, 565},
-        {"greeteroutline-width", required_argument, NULL, 566},
-
-        // bar indicator stuff
-        {"bar-indicator", no_argument, NULL, 700},
-        {"bar-direction", required_argument, NULL, 701},
-        {"bar-orientation", required_argument, NULL, 703},
-        {"bar-step", required_argument, NULL, 704},
-        {"bar-max-height", required_argument, NULL, 705},
-        {"bar-base-width", required_argument, NULL, 706},
-        {"bar-color", required_argument, NULL, 707},
-        {"bar-periodic-step", required_argument, NULL, 708},
-        {"bar-pos", required_argument, NULL, 709},
-        {"bar-count", required_argument, NULL, 710},
-        {"bar-total-width", required_argument, NULL, 711},
-
-        {NULL, no_argument, NULL, 0}};
-
     char *optstring = "c:ui:tCFLMrs:kB:m";
 
     image_path = NULL;
-    update_arguments(argc, argv, longopts, optstring, true);
+    update_arguments(argc, argv, api_options, optstring, true);
 
     if (image_path != NULL) {
         if (!is_directory(image_path)) {
@@ -425,7 +305,50 @@ static int parse_args(arg_data *data, char str[]) {
     return 0;
 }
 
-void *listen_api(void* _) {
+static void init_api_options(struct option longopts[]) {
+    int enabled_options[] = {
+        'c', 'u', 'i', 998, 't', 'C', 'F', 'L', 'M', 'B',
+        // Indicators colors
+        300, 301, 302, 303, 304, 305, 306, 307, 308, 309,
+        310, 311, 322, 312, 313, 314, 315,
+        // Text outline colors
+        316, 317, 318, 319, 320, 321, 323, 'r', 's',
+        'k', 400, 401, 402, 403,
+        // Alignment
+        500, 501, 502, 503, 504, 505, 506,
+        // String stuff
+        510, 511, 512, 513, 514, 515, 516, 517, 518, 519,
+        // Fonts
+        520, 521, 522, 523, 524, 525,
+        // Text size
+        530, 531, 532, 533, 534, 535, 536,
+        // Text/indicator position
+        540, 541, 542, 543, 544, 545, 546, 547, 548,
+        // Text outline width
+        560, 561, 562, 563, 564, 565, 566,
+        // Bar indicator stuff
+        700, 701, 703, 704, 705, 706, 707, 708, 709,
+        710, 711,
+
+        0
+    };
+    size_t size = sizeof(enabled_options)/sizeof(*enabled_options);
+    api_options = malloc(size * sizeof(struct option));
+
+    int n = 0;
+    int i = 0;
+
+    while (n < size) {
+        if (longopts[i].val == enabled_options[n]) {
+            api_options[n] = longopts[i];
+            n++;
+        }
+        i++;
+    }
+}
+
+void *listen_api(void* lopts) {
+    struct option *longopts = lopts;
 
     if (access(api_fifo_path, F_OK) == 0) {
         if (remove(api_fifo_path) != 0) {
@@ -448,6 +371,8 @@ void *listen_api(void* _) {
     arg_data data;
 
     DEBUG("Created fifo at \"%s\"\n", api_fifo_path);
+
+    init_api_options(longopts);
 
 #define open_fifo() {\
     fifo = fopen(api_fifo_path, "rb");\
