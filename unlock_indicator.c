@@ -62,7 +62,9 @@ extern char *modifier_string;
 
 /* A Cairo surface containing the specified image (-i), if any. */
 extern cairo_surface_t *img;
-extern cairo_surface_t *img_slideshow[256];
+extern char *image_path;
+extern char *slideshow_path;
+extern char *img_slideshow[256];
 extern cairo_surface_t *blur_bg_img;
 extern int slideshow_image_count;
 extern int slideshow_interval;
@@ -160,6 +162,9 @@ extern char *lock_text;
 extern char *lock_failed_text;
 extern char *layout_text;
 extern char *greeter_text;
+
+bool load_slideshow_images(const char *path);
+cairo_surface_t* load_image(char* image_path);
 
 /* Whether the failed attempts should be displayed. */
 extern bool show_failed_attempts;
@@ -686,12 +691,13 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
         unsigned long now = (unsigned long)time(NULL);
         if (img == NULL || now - lastCheck >= slideshow_interval) {
             if (slideshow_random_selection) {
-                img = img_slideshow[rand() % slideshow_image_count];
+                img = load_image(img_slideshow[rand() % slideshow_image_count]);
             } else {
-                img = img_slideshow[current_slideshow_index++];
+                img = load_image(img_slideshow[current_slideshow_index++]);
 
                 if (current_slideshow_index >= slideshow_image_count) {
                     current_slideshow_index = 0;
+                    load_slideshow_images(slideshow_path);
                 }
             }
             lastCheck = now;
