@@ -254,7 +254,7 @@ static control_char_config_t control_characters[] = {
     {'\n', CC_POS_RESET, 0, CC_POS_CHANGE, 1},
     {'\b', CC_POS_CHANGE, -1, CC_POS_KEEP, 0},
     {'\r', CC_POS_RESET, 0, CC_POS_KEEP, 0},
-    {'\t', CC_POS_TAB, 8, CC_POS_KEEP, 0},
+    {'\t', CC_POS_TAB, 4, CC_POS_KEEP, 0},
 };
 size_t control_char_count = sizeof control_characters / sizeof(control_char_config_t);
 
