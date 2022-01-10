@@ -241,27 +241,6 @@ Sets the color of the status text while verifying and when password is wrong.
 Sets text colors.
 
 .TP
-.B \-\-time\-str="%H:%M:%S"
-Sets the format used for generating the time string.
-See strftime(3) for a full list of format specifiers.
-Some control chars are supported, see \fBCONTROL CHARACTERS\fR for more detail.
-
-.TP
-.B \-\-date\-str="%A, %m %Y"
-Sets the format used for generating the date string.
-Some control chars are supported, see \fBCONTROL CHARACTERS\fR for more detail.
-
-.TP
-.B \-\-verif\-text="verifying…"
-Sets the string to be shown while verifying the password/input/key/etc.
-Some control chars are supported, see \fBCONTROL CHARACTERS\fR for more detail.
-
-.TP
-.B \-\-wrong\-text="wrong!"
-Sets the string to be shown upon entering an incorrect password.
-Some control chars are supported, see \fBCONTROL CHARACTERS\fR for more detail.
-
-.TP
 .B \-\-keylayout mode
 Displays the keylayout. Positionable similar to date, time, and indicator.
 Modes are as follows:
@@ -274,30 +253,46 @@ Modes are as follows:
 2 - Displays just the contents of the parenthesis, i.e. "US"
 .RE
 
+.B For all following -str or -text options, some control characters
+.B (i.e. \\\\n, \\\\t) are supported. See \fBCONTROL CHARACTERS\fR
+.B for more details.
+
+.TP
+.B \-\-time\-str="%H:%M:%S"
+Sets the format used for generating the time string.
+See strftime(3) for a full list of format specifiers.
+
+.TP
+.B \-\-date\-str="%A, %m %Y"
+Sets the format used for generating the date string.
+
+.TP
+.B \-\-verif\-text="verifying…"
+Sets the string to be shown while verifying the password/input/key/etc.
+
+.TP
+.B \-\-wrong\-text="wrong!"
+Sets the string to be shown upon entering an incorrect password.
+
 .TP
 .B \-\-noinput\-text="no input"
 Sets the string to be shown upon pressing backspace without anything to delete.
-Some control chars are supported, see \fBCONTROL CHARACTERS\fR for more detail.
 
 .TP
 .B \-\-lock\-text="locking…"
 Sets the string to be shown while acquiring pointer and keyboard focus.
-Some control chars are supported, see \fBCONTROL CHARACTERS\fR for more detail.
 
 .TP
 .B \-\-lockfailed\-text="lock failed!"
 Sets the string to be shown after failing to acquire pointer and keyboard focus.
-Some control chars are supported, see \fBCONTROL CHARACTERS\fR for more detail.
 
 .TP
 .B \-\-greeter\-text=""
 Sets the greeter text.
-Some control chars are supported, see \fBCONTROL CHARACTERS\fR for more detail.
 
 .TP
 .B \-\-no\-modkey\-text
 Hides the modkey indicator (Num, Caps Lock ...)
-Some control chars are supported, see \fBCONTROL CHARACTERS\fR for more detail.
 
 .TP
 .B \-\-{time, date, layout, verif, wrong, modif, greeter}\-align
@@ -519,7 +514,14 @@ Note: The width may be strange if the font is not mono-spaced.
 .IR convert(1)
 \- feed a wide variety of image formats to i3lock
 
-.SH AUTHOR
+.SH HOMEPAGE
+https://github.com/Raymo111/i3lock-color
+
+Please report bugs and submit pull-requests as follows:
+For i3lock (upstream): https://github.com/i3/i3lock
+For i3lock-color (enhancements on top of i3lock): https://github.com/Raymo111/i3lock-color
+
+.SH AUTHORS
 Michael Stapelberg <michael+i3lock at stapelberg dot de>
 
 Jan-Erik Rediger <badboy at archlinux.us>
