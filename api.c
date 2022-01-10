@@ -184,7 +184,7 @@ static void update_api(int argc, char *argv[]) {
     if (image_path != NULL) {
         if (!is_directory(image_path)) {
             pthread_mutex_lock(&redraw_mutex);
-            img = load_image(image_path, image_raw_format);
+            img = load_image(image_path);
             pthread_mutex_unlock(&redraw_mutex);
         }
         free(image_path);

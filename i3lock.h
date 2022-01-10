@@ -16,6 +16,6 @@
          }                                                          \
     } while (0)
 
-cairo_surface_t* load_image(char* image_path, char* image_raw_format);
+cairo_surface_t* load_image(char* image_path);
 
 #endif

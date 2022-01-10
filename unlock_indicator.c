@@ -63,11 +63,14 @@ extern char *modifier_string;
 
 /* A Cairo surface containing the specified image (-i), if any. */
 extern cairo_surface_t *img;
-extern cairo_surface_t *img_slideshow[256];
+extern char *image_path;
+extern char *slideshow_path;
+extern char *img_slideshow[256];
 extern cairo_surface_t *blur_bg_img;
 extern int slideshow_image_count;
 extern int slideshow_interval;
 extern bool slideshow_random_selection;
+int slideshow_image_now = 0;
 
 unsigned long lastCheck;
 
@@ -162,6 +165,9 @@ extern char *lock_failed_text;
 extern char *layout_text;
 extern char *greeter_text;
 
+bool load_slideshow_images(const char *path);
+cairo_surface_t* load_image(char* image_path);
+
 /* Whether the failed attempts should be displayed. */
 extern bool show_failed_attempts;
 /* Number of failed unlock attempts. */
@@ -251,6 +257,14 @@ static cairo_font_face_t *font_faces[6] = {
     NULL,
 };
 
+static control_char_config_t control_characters[] = {
+    {'\n', CC_POS_RESET, 0, CC_POS_CHANGE, 1},
+    {'\b', CC_POS_CHANGE, -1, CC_POS_KEEP, 0},
+    {'\r', CC_POS_RESET, 0, CC_POS_KEEP, 0},
+    {'\t', CC_POS_TAB, 4, CC_POS_KEEP, 0},
+};
+size_t control_char_count = sizeof control_characters / sizeof(control_char_config_t);
+
 static cairo_font_face_t *get_font_face(int which) {
     if (font_faces[which]) {
         return font_faces[which];
@@ -310,6 +324,94 @@ static cairo_font_face_t *get_font_face(int which) {
 }
 
 /*
+ * Splits the given text by "control chars",
+ * And then draws the given text onto the cairo context.
+ */
+static void draw_text_with_cc(cairo_t *ctx, text_t text, double start_x) {
+    // get scaled_font
+    cairo_scaled_font_t *sft;
+    cairo_matrix_t fm, ctm;
+    cairo_matrix_init_scale(&fm, text.size, text.size);
+    cairo_get_matrix(ctx, &ctm);
+    cairo_font_options_t *opts;
+    opts = cairo_font_options_create();
+    sft = cairo_scaled_font_create(text.font, &fm, &ctm, opts);
+    cairo_font_options_destroy(opts);
+    /* use `a` to represent common character width, using in `\t`  */
+    cairo_text_extents_t te;
+    cairo_text_extents(ctx, "a", &te);
+
+    // convert text to glyphs.
+    cairo_status_t status;
+    cairo_glyph_t* glyphs;
+    int nglyphs = 0,
+        len = 0,
+        start = 0,
+        lineno = 0,
+        x = start_x,
+        y = text.y;
+    size_t cur_cc;
+
+    while (text.str[start + len] != '\0') {
+        char is_cc = 0;
+        do {
+            for (cur_cc = 0; cur_cc < control_char_count; cur_cc++) {
+                if (text.str[start+len] == control_characters[cur_cc].character) {
+                    is_cc = 1;
+                    break;
+                }
+            }
+        } while (text.str[start+(len++)] != '\0' && !is_cc);
+        if (len > is_cc) {
+            status = cairo_scaled_font_text_to_glyphs(
+                sft, x, y, text.str + start, is_cc ? len - 1: len,
+                &glyphs, &nglyphs,
+                NULL, NULL, NULL
+            );
+            if (status == CAIRO_STATUS_SUCCESS) {
+                cairo_glyph_path(ctx, glyphs, nglyphs);
+            } else {
+                DEBUG("draw %c failed\n", text.str[start]);
+            }
+        }
+        if (is_cc && (cur_cc < control_char_count)) {
+            if (control_characters[cur_cc].x_behavior == CC_POS_CHANGE) {
+                char x_offset = control_characters[cur_cc].x_behavior_arg;
+                if (x_offset < 0 && x_offset > -nglyphs) {
+                    x = glyphs[nglyphs+x_offset].x;
+                } else if (x_offset > 0) {
+                    if (nglyphs >= 1) { // the case is some leading control chars.(although there is none now)
+                        x = glyphs[nglyphs - 1].x + x_offset * te.x_advance;
+                    } else { // deal the leading control chars.
+                        x += x_offset * te.x_advance;
+                    }
+                }
+            } else if (control_characters[cur_cc].x_behavior == CC_POS_RESET) {
+                x = start_x;
+            } else if (control_characters[cur_cc].x_behavior == CC_POS_TAB) {
+                if (nglyphs > 0) { // there may be leading tab, such as '\t\t' or '\n\t'
+                    int advance = control_characters[cur_cc].x_behavior_arg - ((nglyphs - 1) % control_characters[cur_cc].x_behavior_arg);
+                    x = glyphs[nglyphs - 1].x + advance * te.x_advance;
+                } else { // deal the leading tab.
+                    x += control_characters[cur_cc].x_behavior_arg * te.x_advance;
+                }
+            }
+            if (control_characters[cur_cc].y_behavior == CC_POS_CHANGE) {
+                lineno += control_characters[cur_cc].y_behavior_arg;
+            } // CC_POS_KEEP is default for y
+        }
+        y = text.y + text.size * lineno;
+        if (len > is_cc) {
+            cairo_glyph_free(glyphs);
+        }
+        nglyphs = 0;
+        start += len;
+        len = 0;
+    }
+    cairo_scaled_font_destroy(sft);
+}
+
+/*
  * Draws the given text onto the cairo context
  */
 static void draw_text(cairo_t *ctx, text_t text) {
@@ -337,9 +439,8 @@ static void draw_text(cairo_t *ctx, text_t text) {
     }
 
     cairo_set_source_rgba(ctx, text.color.red, text.color.green, text.color.blue, text.color.alpha);
-    cairo_move_to(ctx, x, text.y);
 
-    cairo_text_path(ctx, text.str);
+    draw_text_with_cc(ctx, text, x);
     cairo_fill_preserve(ctx);
 
     cairo_set_source_rgba(ctx, text.outline_color.red, text.outline_color.green, text.outline_color.blue, text.outline_color.alpha);
@@ -687,13 +788,14 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
         unsigned long now = (unsigned long)time(NULL);
         if (img == NULL || now - lastCheck >= slideshow_interval) {
             if (slideshow_random_selection) {
-                img = img_slideshow[rand() % slideshow_image_count];
+                img = load_image(img_slideshow[rand() % slideshow_image_count]);
             } else {
-                img = img_slideshow[current_slideshow_index++];
-
-                if (current_slideshow_index >= slideshow_image_count) {
-                    current_slideshow_index = 0;
-                }
+                img = load_image(img_slideshow[current_slideshow_index]);
+            }
+            current_slideshow_index++;
+            if (current_slideshow_index >= slideshow_image_count) {
+                current_slideshow_index = 0;
+                load_slideshow_images(slideshow_path);
             }
             lastCheck = now;
         }

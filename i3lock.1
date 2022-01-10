@@ -8,7 +8,7 @@
 .fi
 ..
 
-.TH i3lock-color 1 "JUN 2021" Linux "User Manuals"
+.TH i3lock-color 1 "JAN 2022" Linux "User Manuals"
 
 .SH NAME
 i3lock-color \- improved screen locker
@@ -241,6 +241,23 @@ Sets the color of the status text while verifying and when password is wrong.
 Sets text colors.
 
 .TP
+.B \-\-keylayout mode
+Displays the keylayout. Positionable similar to date, time, and indicator.
+Modes are as follows:
+.RS
+.IP \[bu] 2
+0 - Displays the full string returned by the query, i.e. "English (US)"
+.IP \[bu]
+1 - Displays up until the first parenthesis, i.e. "English"
+.IP \[bu]
+2 - Displays just the contents of the parenthesis, i.e. "US"
+.RE
+
+.B For all following -str or -text options, some control characters
+.B (i.e. \\\\n, \\\\t) are supported. See \fBCONTROL CHARACTERS\fR
+.B for more details.
+
+.TP
 .B \-\-time\-str="%H:%M:%S"
 Sets the format used for generating the time string.
 See strftime(3) for a full list of format specifiers.
@@ -256,19 +273,6 @@ Sets the string to be shown while verifying the password/input/key/etc.
 .TP
 .B \-\-wrong\-text="wrong!"
 Sets the string to be shown upon entering an incorrect password.
-
-.TP
-.B \-\-keylayout mode
-Displays the keylayout. Positionable similar to date, time, and indicator.
-Modes are as follows:
-.RS
-.IP \[bu] 2
-0 - Displays the full string returned by the query, i.e. "English (US)"
-.IP \[bu]
-1 - Displays up until the first parenthesis, i.e. "English"
-.IP \[bu]
-2 - Displays just the contents of the parenthesis, i.e. "US"
-.RE
 
 .TP
 .B \-\-noinput\-text="no input"
@@ -484,6 +488,25 @@ The interval to wait until switching to the next image.
 .B \-\-slideshow\-random\-selection
 Randomize the order of the images.
 
+.SH CONTROL CHARACTERS
+Control characters (\\r \\n \\b \\t) are supported in text OPTIONS. Their behavior
+are almost as same as anywhere else.
+.TP
+.B Carriage Return(\\\\r)
+Move to the start of line (left edge).
+Notes: The rendered characters would still live there.
+.TP
+.B Line Feed(\\\\n)
+Move to start of next line (left edge).
+.TP
+.B Backspace(\\\\b)
+Overwrite last one char if exists.
+Notes: The rendered character would still live there.
+.TP
+.B Tab(\\\\t)
+Move to next tab stop position.The width of one character for moving is as same as character 'a'.
+Note: The width may be strange if the font is not mono-spaced.
+
 .SH SEE ALSO
 .IR xautolock(1)
 \- use i3lock as your screen saver
@@ -491,7 +514,14 @@ Randomize the order of the images.
 .IR convert(1)
 \- feed a wide variety of image formats to i3lock
 
-.SH AUTHOR
+.SH HOMEPAGE
+https://github.com/Raymo111/i3lock-color
+
+Please report bugs and submit pull-requests as follows:
+For i3lock (upstream): https://github.com/i3/i3lock
+For i3lock-color (enhancements on top of i3lock): https://github.com/Raymo111/i3lock-color
+
+.SH AUTHORS
 Michael Stapelberg <michael+i3lock at stapelberg dot de>
 
 Jan-Erik Rediger <badboy at archlinux.us>

@@ -14,13 +14,13 @@ pamd_files = pam/i3lock
 pamd_DATA = $(pamd_files)
 
 if ENABLE_BASH_COMPLETION
-	bashcompletiondir = $(BASH_COMPLETION_DIR)
-	dist_bashcompletion_DATA = i3lock-bash
+bashcompletiondir = $(BASH_COMPLETION_DIR)
+dist_bashcompletion_DATA = i3lock-bash
 endif
 
 if ENABLE_ZSH_COMPLETION
-	zshcompletiondir = $(ZSH_COMPLETION_DIR)
-	dist_zshcompletion_DATA = i3lock-zsh
+zshcompletiondir = $(ZSH_COMPLETION_DIR)
+dist_zshcompletion_DATA = i3lock-zsh
 endif
 
 install-data-hook:

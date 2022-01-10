@@ -47,6 +47,22 @@ typedef enum {
     MAX,
 } background_type_t;
 
+
+typedef enum {
+    CC_POS_RESET,
+    CC_POS_CHANGE,
+    CC_POS_KEEP,
+    CC_POS_TAB
+} control_char_pos_t;
+
+typedef struct {
+    char character;
+    control_char_pos_t x_behavior;
+    int x_behavior_arg;
+    control_char_pos_t y_behavior;
+    int y_behavior_arg;
+} control_char_config_t;
+
 void render_lock(uint32_t* resolution, xcb_drawable_t drawable);
 void draw_image(uint32_t* resolution, cairo_surface_t* img, cairo_t* xcb_ctx);
 void init_colors_once(void);

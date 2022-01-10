@@ -32,3 +32,4 @@ Makefile.in
 /install-sh
 /missing
 /stamp-h1
+aminclude_static.am
