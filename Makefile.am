@@ -13,6 +13,33 @@ pamddir = $(sysconfdir)/pam.d
 pamd_files = pam/i3lock
 pamd_DATA = $(pamd_files)
 
+if ENABLE_BASH_COMPLETION
+	bashcompletiondir = $(BASH_COMPLETION_DIR)
+	dist_bashcompletion_DATA = i3lock-bash
+endif
+
+if ENABLE_ZSH_COMPLETION
+	zshcompletiondir = $(ZSH_COMPLETION_DIR)
+	dist_zshcompletion_DATA = i3lock-zsh
+endif
+
+install-data-hook:
+if ENABLE_BASH_COMPLETION
+	test -f "${BASH_COMPLETION_DIR}/i3lock-bash" && mv -f "${BASH_COMPLETION_DIR}/i3lock-bash" "${BASH_COMPLETION_DIR}/i3lock" || true
+endif
+if ENABLE_ZSH_COMPLETION
+	test -f "${ZSH_COMPLETION_DIR}/i3lock-zsh" && mv -f "${ZSH_COMPLETION_DIR}/i3lock-zsh" "${ZSH_COMPLETION_DIR}/_i3lock" || true
+endif
+
+uninstall-hook:
+if ENABLE_BASH_COMPLETION
+	rm -f ${BASH_COMPLETION_DIR}/i3lock
+endif
+if ENABLE_ZSH_COMPLETION
+	rm -f ${ZSH_COMPLETION_DIR}/_i3lock
+endif
+
+
 AM_CPPFLAGS = \
 	@AX_EXTEND_SRCDIR_CPPFLAGS@
 
