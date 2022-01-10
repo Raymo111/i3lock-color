@@ -28,6 +28,7 @@
 #include <err.h>
 #include <errno.h>
 #include <assert.h>
+#include <regex.h>
 #ifdef __OpenBSD__
 #include <bsd_auth.h>
 #else
@@ -244,8 +245,12 @@ static uint8_t xkb_base_event;
 static uint8_t xkb_base_error;
 static int randr_base = -1;
 
+char *image_path = NULL;
+char *image_raw_format = NULL;
+char *slideshow_path = NULL;
+
 cairo_surface_t *img = NULL;
-cairo_surface_t *img_slideshow[256];
+char *img_slideshow[256];
 cairo_surface_t *blur_bg_img = NULL;
 int slideshow_image_count = 0;
 int slideshow_interval = 10;
@@ -1368,7 +1373,7 @@ static void raise_loop(xcb_window_t window) {
 /*
  * Loads an image from the given path. Handles JPEG and PNG. Returns NULL in case of error.
  */
-static cairo_surface_t* load_image(char* image_path, char* image_raw_format) {
+cairo_surface_t* load_image(char* image_path) {
     cairo_surface_t *img = NULL;
     JPEG_INFO jpg_info;
 
@@ -1400,32 +1405,42 @@ static cairo_surface_t* load_image(char* image_path, char* image_raw_format) {
 }
 
 /*
- * Loads the images from the provided directory and stores them in the pointer array
+ * Reads the provided directory and stores the images path in the pointer array
  * img_slideshow
  */
-static void load_slideshow_images(const char *path, char *image_raw_format) {
+bool load_slideshow_images(const char *path) {
     slideshow_enabled = true;
     DIR *d;
     struct dirent *dir;
     int file_count = 0;
+    slideshow_image_count = 0;
+
+    DEBUG("Loading slideshow images at \"%s\"\n", path);
 
     d = opendir(path);
     if (d == NULL) {
         printf("Could not open directory: %s\n", path);
-        exit(EXIT_SUCCESS);
+        return false;
+    }
+
+    regex_t reg;
+
+    if (regcomp(&reg, ".*\\.(jpe?g|png)", REG_EXTENDED)) {
+        printf("Could not compile regex\n");
+        return false;
     }
 
     while ((dir = readdir(d)) != NULL) {
-        if (file_count >= 256) {
-            break;
-        }
+        if (file_count >= 256) break;
+        int result = regexec(&reg, dir->d_name, 0, NULL, 0);
+        if (result) continue;
 
         char path_to_image[256];
         strcpy(path_to_image, path);
         strcat(path_to_image, "/");
         strcat(path_to_image, dir->d_name);
 
-        img_slideshow[file_count] = load_image(path_to_image, image_raw_format);
+        img_slideshow[file_count] = strdup(path_to_image);
 
         if (img_slideshow[file_count] != NULL) {
             ++file_count;
@@ -1433,15 +1448,14 @@ static void load_slideshow_images(const char *path, char *image_raw_format) {
     }
 
     slideshow_image_count = file_count;
-
+    regfree(&reg);
     closedir(d);
+    return true;
 }
 
 int main(int argc, char *argv[]) {
     struct passwd *pw;
     char *username;
-    char *image_path = NULL;
-    char *image_raw_format = NULL;
 #ifndef __OpenBSD__
     int ret;
     struct pam_conv conv = {conv_callback, NULL};
@@ -2359,10 +2373,12 @@ int main(int argc, char *argv[]) {
     init_colors_once();
     if (image_path != NULL) {
         if (!is_directory(image_path)) {
-            img = load_image(image_path, image_raw_format);
+            img = load_image(image_path);
         } else {
             /* Path to a directory is provided -> use slideshow mode */
-            load_slideshow_images(image_path, image_raw_format);
+            slideshow_path = strdup(image_path);
+            if (!load_slideshow_images(slideshow_path)) exit(EXIT_FAILURE);
+            img = load_image(img_slideshow[0]);
         }
 
         free(image_path);

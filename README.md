@@ -125,18 +125,35 @@ To build AND install, run:
 ```
 You may choose to modify the script based on your needs/OS/distro.
 
+## Alpine Linux Packages
+Alpine packages i3lock-color for a variety of architectures. A full list can be found on [pkgs.alpinelinux.org](https://pkgs.alpinelinux.org/packages?name=i3lock-color&branch=edge).
+
 ## Arch Linux Packages
 ~~[Stable version in Community](https://www.archlinux.org/packages/community/x86_64/i3lock-color/)~~
 
-Unfortunately the previous maintainer left, and the package got dumped back into the AUR where I'm now maintaining it. I'm looking for a TU to sponsor it back into Community, but for now, get it on AUR:
+Unfortunately the previous maintainer left, and the package got dumped back into the AUR where I'm now maintaining it. You can get it on AUR:
 - [Release Version on AUR](https://aur.archlinux.org/packages/i3lock-color/)
 - [Git Version on AUR](https://aur.archlinux.org/packages/i3lock-color-git/)
 
-## Gentoo Package
+If you're an Arch TU and you're reading this please consider sponsoring it into Community again!
+
+## Gentoo Linux Package
 i3lock-color is available on **GURU**, under [`x11-misc/i3lock-color`](https://github.com/gentoo/guru/tree/master/x11-misc/i3lock-color).
 
+## Kali Linux Package
+A Debian/Kali package is available: https://gitlab.com/kalilinux/packages/i3lock-color.
+
+## NixOS Package
+A NixOS package is available. To install, run
+```
+nix-env -iA nixos.i3lock-color
+```
+
+## Void Linux Package
+A Void Linux package is available at https://github.com/void-linux/void-packages/tree/master/srcpkgs/i3lock-color.
+
 ## FreeBSD port
-New 2021 port on freshports: [x11/i3lock-color/](https://www.freshports.org/x11/i3lock-color/)
+A FreeBSD port is available on freshports: [x11/i3lock-color/](https://www.freshports.org/x11/i3lock-color/).
 
 ## Running i3lock-color
 Simply invoke the 'i3lock' command. To get out of it, enter your password and press enter.
