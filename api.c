@@ -333,7 +333,7 @@ static void init_api_options(struct option longopts[]) {
         0
     };
     size_t size = sizeof(enabled_options)/sizeof(*enabled_options);
-    api_options = malloc(size * sizeof(struct option));
+    api_options = malloc(size * sizeof *api_options);
 
     int n = 0;
     int i = 0;
@@ -345,6 +345,34 @@ static void init_api_options(struct option longopts[]) {
         }
         i++;
     }
+}
+
+FILE *fifo;
+pthread_mutex_t api_mutex;
+
+void close_api(pthread_t api_thread) {
+    pthread_mutex_lock(&api_mutex);
+
+    sleep(1);
+
+    // To force reading inside listen_api's loop
+    FILE *f = fopen(api_fifo_path, "wb");
+    char *s = "--close-api\n";
+    fwrite(s, sizeof *s, strlen(s), f);
+    fclose(f);
+
+    if (fifo != NULL) {
+        fclose(fifo);
+    }
+    fifo = NULL;
+
+    pthread_mutex_unlock(&api_mutex);
+
+    void *retval;
+    pthread_join(api_thread, &retval);
+    pthread_mutex_destroy(&api_mutex);
+
+    remove(api_fifo_path);
 }
 
 void *listen_api(void* lopts) {
@@ -363,16 +391,10 @@ void *listen_api(void* lopts) {
         return NULL;
     }
 
-    FILE *fifo;
-    char c;
-    int i;
-    int times = 0;
-    char *text = malloc(50);
-    arg_data data;
-
     DEBUG("Created fifo at \"%s\"\n", api_fifo_path);
 
     init_api_options(longopts);
+    pthread_mutex_init(&api_mutex, NULL);
 
 #define open_fifo() {\
     fifo = fopen(api_fifo_path, "rb");\
@@ -386,17 +408,25 @@ void *listen_api(void* lopts) {
     if (fifo != NULL) fclose(fifo);\
 }
     open_fifo()
-    bool reading = true;
 
-    while (1) {
-        strcpy(text, "command ");
+    arg_data data;
+    bool reading = true;
+    int text_size = 20;
+    char *text = malloc(text_size * sizeof *text);
+    char c;
+
+    int i, times = 0;
+
+    while (fifo != NULL) {
+        text = strcpy(text, "command ");
         i = strlen(text);
         int n = i;
 
         reading = true;
-        while (reading && (c = fgetc(fifo)) != EOF) {
-            if (sizeof(text) <= i) {
-                text = realloc(text, i * 2);
+        while (fifo != NULL && reading && (c = fgetc(fifo)) != EOF) {
+            if (text_size <= i + 1) {
+                text_size = i * 1.5;
+                text = realloc(text, text_size * sizeof *text);
             }
             if (c == '\n') {
                 text[i] = ' ';
@@ -406,10 +436,14 @@ void *listen_api(void* lopts) {
             i++;
         }
         text[i] = '\0';
+
+        pthread_mutex_lock(&api_mutex);
+        if (fifo == NULL) break;
         if (c == EOF) {
             close_fifo();
             open_fifo();
         }
+        pthread_mutex_unlock(&api_mutex);
         if (n == i) continue;
 
         DEBUG("API message received - %d\n", times);
@@ -423,12 +457,13 @@ void *listen_api(void* lopts) {
         update_api(data.argc, data.argv);
         init_colors_once();
 
-        memset(text, 0, i);
         if (api_force_redraw) {
             redraw_screen();
         }
     }
-    fclose(fifo);
+    close_fifo();
+    free(text);
+    free(api_options);
 
     return NULL;
 }

@@ -1,8 +1,8 @@
 #ifndef _I3LOCK_H
 #define _I3LOCK_H
+#include <cairo/cairo.h>
 
 // boy i sure hope this doesnt change in the future
-#include <cairo/cairo.h>
 #define NANOSECONDS_IN_SECOND 1000000000
 
 /* This macro will only print debug output when started with --debug.

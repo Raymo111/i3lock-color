@@ -2107,7 +2107,7 @@ void update_arguments(int argc, char *argv[], struct option longopts[], char opt
                 api_enabled = true;
                 break;
             case 907:
-                api_fifo_path = optarg;
+                api_fifo_path = strdup(optarg);
                 break;
             case 908:
                 api_force_redraw = true;
@@ -2554,7 +2554,7 @@ int main(int argc, char *argv[]) {
     set_focused_window(conn, screen->root, stolen_focus);
     xcb_aux_sync(conn);
     pthread_mutex_destroy(&redraw_mutex);
-    remove(api_fifo_path);
+    if (api_enabled) close_api(api_thread);
 
     return 0;
 }

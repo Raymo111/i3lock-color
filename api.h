@@ -2,6 +2,7 @@
 #define _API_H
 
 #include <stdio.h>
+#include <pthread.h>
 
 typedef struct {
     size_t argc;
@@ -9,5 +10,6 @@ typedef struct {
 } arg_data;
 
 void *listen_api(void*);
+void close_api(pthread_t api_thread);
 
 #endif
