@@ -48,7 +48,7 @@ AX_CODE_COVERAGE
 
 dnl is_release must be lowercase because AX_CHECK_ENABLE_DEBUG calls m4_tolower
 dnl on its fourth argument.
-AX_CHECK_ENABLE_DEBUG([yes], , [UNUSED_NDEBUG], [$is_release])
+AX_CHECK_ENABLE_DEBUG([no], , , [$is_release])
 
 AC_PROG_CC
 
@@ -132,14 +132,14 @@ AC_CHECK_HEADERS([fcntl.h float.h inttypes.h limits.h locale.h netinet/in.h path
 
 AC_CONFIG_FILES([Makefile])
 
-# Enable address sanitizer for non-release builds. The performance hit is a
+# Enable address sanitizer for debug builds. The performance hit is a
 # 50% increase of wallclock time for the testsuite on my machine.
-if test x$is_release = xyes; then
-	default_sanitizers=
-else
+if test "x$ax_enable_debug" = "xyes"; then
 	default_sanitizers=address
+else
+	default_sanitizers=
 fi
-AX_SANITIZERS(, [$default_sanitizers], [AC_DEFINE([I3LOCK_ASAN_ENABLED], [], [Enable ASAN])])
+AX_SANITIZERS(, [$default_sanitizers])
 
 AC_OUTPUT
 

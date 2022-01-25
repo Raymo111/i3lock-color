@@ -1,12 +1,12 @@
 #!/bin/sh -x
 
-configureOpts="--disable-sanitizers --disable-debug"
+configureOpts=""
 
 while getopts ":hd" opt; do
   case ${opt} in
     h ) echo "Use -d to turn on sanitizers (for debugging only)"
       exit;;
-    d ) configureOpts=""
+    d ) configureOpts="--enable-debug"
       ;;
     \? ) echo "Usage: $0 [-h] [-d]"
       exit;;
