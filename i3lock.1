@@ -393,18 +393,6 @@ volume - XF86AudioMute, XF86AudioLowerVolume, XF86AudioRaiseVolume
 .RE
 
 .TP
-.B \-\-special\-passthrough
-Allows special keys to pass through the locked screen, with \-\-pass\-{media, screen,
-power, volume}\-keys. Keystrokes are forcibly sent to the window manager or desktop
-environment in three steps: un-grab keyboard, send key, and re-grab the keyboard.
-No other keys will be sent to the WM/DE.
-
-Note: ONLY use this option if the special keys are NOT passed through without it.
-This could be less safe than the default behavior since the keyboard is ungrabbed for
-the keys to be passed through. This HAS been tested though, so there SHOULDN'T be any
-security issues.
-
-.TP
 .B \-\-bar\-indicator
 Replaces the usual ring indicator with a bar indicator. Comes with perks.
 
