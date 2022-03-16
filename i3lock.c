@@ -264,22 +264,22 @@ bool pass_power_keys = false;
 bool pass_volume_keys = false;
 
 bool hotkeys = false;
-char* brightness_up_cmd = NULL;
-char* brightness_down_cmd = NULL;
+char* cmd_brightness_up = NULL;
+char* cmd_brightness_down = NULL;
 
-char* media_play_cmd = NULL;
-char* media_pause_cmd = NULL;
-char* media_stop_cmd = NULL;
-char* media_next_cmd = NULL;
-char* media_prev_cmd = NULL;
+char* cmd_media_play = NULL;
+char* cmd_media_pause = NULL;
+char* cmd_media_stop = NULL;
+char* cmd_media_next = NULL;
+char* cmd_media_prev = NULL;
 
-char* audio_mute_cmd = NULL;
-char* volume_up_cmd = NULL;
-char* volume_down_cmd = NULL;
+char* cmd_audio_mute = NULL;
+char* cmd_volume_up = NULL;
+char* cmd_volume_down = NULL;
 
-char* power_down_cmd = NULL;
-char* power_off_cmd = NULL;
-char* power_sleep_cmd = NULL;
+char* cmd_power_down = NULL;
+char* cmd_power_off = NULL;
+char* cmd_power_sleep = NULL;
 
 // for the rendering thread, so we can clean it up
 pthread_t draw_thread;
@@ -725,80 +725,80 @@ static void handle_key_press(xcb_key_press_event_t *event) {
     if (hotkeys) {
         switch(ksym) {
             case XKB_KEY_XF86MonBrightnessUp:
-                if (brightness_up_cmd) {
-                    system(brightness_up_cmd);
+                if (cmd_brightness_up) {
+                    system(cmd_brightness_up);
                     return;
                 }
                 break;
             case XKB_KEY_XF86MonBrightnessDown:
-                if (brightness_down_cmd) {
-                    system(brightness_down_cmd);
+                if (cmd_brightness_down) {
+                    system(cmd_brightness_down);
                     return;
                 }
                 break;
             case XKB_KEY_XF86AudioPlay:
-                if (media_play_cmd) {
-                    system(media_play_cmd);
+                if (cmd_media_play) {
+                    system(cmd_media_play);
                     return;
                 }
                 break;
             case XKB_KEY_XF86AudioPause:
-                if (media_pause_cmd) {
-                    system(media_pause_cmd);
+                if (cmd_media_pause) {
+                    system(cmd_media_pause);
                     return;
                 }
                 break;
             case XKB_KEY_XF86AudioStop:
-                if (media_stop_cmd) {
-                    system(media_stop_cmd);
+                if (cmd_media_stop) {
+                    system(cmd_media_stop);
                     return;
                 }
                 break;
             case XKB_KEY_XF86AudioPrev:
-                if (media_prev_cmd) {
-                    system(media_prev_cmd);
+                if (cmd_media_prev) {
+                    system(cmd_media_prev);
                     return;
                 }
                 break;
             case XKB_KEY_XF86AudioNext:
-                if (media_next_cmd) {
-                    system(media_next_cmd);
+                if (cmd_media_next) {
+                    system(cmd_media_next);
                     return;
                 }
                 break;
             case XKB_KEY_XF86AudioMute:
-                if (audio_mute_cmd) {
-                    system(audio_mute_cmd);
+                if (cmd_audio_mute) {
+                    system(cmd_audio_mute);
                     return;
                 }
                 break;
             case XKB_KEY_XF86AudioLowerVolume:
-                if (volume_down_cmd) {
-                    system(volume_down_cmd);
+                if (cmd_volume_down) {
+                    system(cmd_volume_down);
                     return;
                 }
                 break;
             case XKB_KEY_XF86AudioRaiseVolume:
-                if (volume_up_cmd) {
-                    system(volume_up_cmd);
+                if (cmd_volume_up) {
+                    system(cmd_volume_up);
                     return;
                 }
                 break;
             case XKB_KEY_XF86PowerDown:
-                if (power_down_cmd) {
-                    system(power_down_cmd);
+                if (cmd_power_down) {
+                    system(cmd_power_down);
                     return;
                 }
                 break;
             case XKB_KEY_XF86PowerOff:
-                if (power_off_cmd) {
-                    system(power_off_cmd);
+                if (cmd_power_off) {
+                    system(cmd_power_off);
                     return;
                 }
                 break;
             case XKB_KEY_XF86Sleep:
-                if (power_sleep_cmd) {
-                    system(power_sleep_cmd);
+                if (cmd_power_sleep) {
+                    system(cmd_power_sleep);
                     return;
                 }
                 break;
@@ -1662,22 +1662,22 @@ int main(int argc, char *argv[]) {
 
         // custom commands for pass keys
         {"custom-key-commands", no_argument, NULL, 609},
-        {"brightness-up-cmd", required_argument, NULL, 610},
-        {"brightness-down-cmd", required_argument, NULL, 611},
+        {"cmd-brightness-up", required_argument, NULL, 610},
+        {"cmd-brightness-down", required_argument, NULL, 611},
 
-        {"media-play-cmd", required_argument, NULL, 620},
-        {"media-pause-cmd", required_argument, NULL, 621},
-        {"media-stop-cmd", required_argument, NULL, 622},
-        {"media-next-cmd", required_argument, NULL, 623},
-        {"media-prev-cmd", required_argument, NULL, 624},
+        {"cmd-media-play", required_argument, NULL, 620},
+        {"cmd-media-pause", required_argument, NULL, 621},
+        {"cmd-media-stop", required_argument, NULL, 622},
+        {"cmd-media-next", required_argument, NULL, 623},
+        {"cmd-media-prev", required_argument, NULL, 624},
 
-        {"audio-mute-cmd", required_argument, NULL, 630},
-        {"volume-up-cmd", required_argument, NULL, 631},
-        {"volume-down-cmd", required_argument, NULL, 632},
+        {"cmd-audio-mute", required_argument, NULL, 630},
+        {"cmd-volume-up", required_argument, NULL, 631},
+        {"cmd-volume-down", required_argument, NULL, 632},
 
-        {"power-down-cmd", required_argument, NULL, 640},
-        {"power-off-cmd", required_argument, NULL, 641},
-        {"power-sleep-cmd", required_argument, NULL, 642},
+        {"cmd-power-down", required_argument, NULL, 640},
+        {"cmd-power-off", required_argument, NULL, 641},
+        {"cmd-power-sleep", required_argument, NULL, 642},
 
         // bar indicator stuff
         {"bar-indicator", no_argument, NULL, 700},
@@ -2245,46 +2245,46 @@ int main(int argc, char *argv[]) {
                 hotkeys = true;
                 break;            
 			case 610:
-				brightness_up_cmd = strdup(optarg);
+				cmd_brightness_up = strdup(optarg);
 				break;
 			case 611:
-				brightness_down_cmd = strdup(optarg);
+				cmd_brightness_down = strdup(optarg);
 				break;
 
 			case 620:
-				media_play_cmd = strdup(optarg);
+				cmd_media_play = strdup(optarg);
 				break;
 			case 621:
-				media_pause_cmd = strdup(optarg);
+				cmd_media_pause = strdup(optarg);
 				break;
 			case 622:
-				media_stop_cmd = strdup(optarg);
+				cmd_media_stop = strdup(optarg);
 				break;
 			case 623:
-				media_next_cmd = strdup(optarg);
+				cmd_media_next = strdup(optarg);
 				break;
 			case 624:
-				media_prev_cmd = strdup(optarg);
+				cmd_media_prev = strdup(optarg);
 				break;
 
 			case 630:
-				audio_mute_cmd = strdup(optarg);
+				cmd_audio_mute = strdup(optarg);
 				break;
 			case 631:
-				volume_up_cmd = strdup(optarg);
+				cmd_volume_up = strdup(optarg);
 				break;
 			case 632:
-				volume_down_cmd = strdup(optarg);
+				cmd_volume_down = strdup(optarg);
 				break;
 
 			case 640:
-				power_down_cmd = strdup(optarg);
+				cmd_power_down = strdup(optarg);
 				break;
 			case 641:
-				power_off_cmd = strdup(optarg);
+				cmd_power_off = strdup(optarg);
 				break;
 			case 642:
-				power_sleep_cmd = strdup(optarg);
+				cmd_power_sleep = strdup(optarg);
 				break;
 
 			// Bar indicator
