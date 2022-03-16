@@ -81,6 +81,24 @@ _i3lock() {
   "--pass-screen-keys"
   "--pass-power-keys"
   "--pass-volume-keys"
+  "--custom-key-commands"
+
+  "--brightness-up-cmd"
+  "--brightness-down-cmd"
+
+  "--media-play-cmd"
+  "--media-pause-cmd"
+  "--media-stop-cmd"
+  "--media-next-cmd"
+  "--media-prev-cmd"
+
+  "--audio-mute-cmd"
+  "--volume-up-cmd"
+  "--volume-down-cmd"
+
+  "--power-down-cmd"
+  "--power-off-cmd"
+  "--power-sleep-cmd"
   # Bar mode
   "--bar-indicator"
   "--bar-direction"

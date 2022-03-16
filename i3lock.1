@@ -392,6 +392,43 @@ power - XF86PowerDown, XF86PowerOff, XF86Sleep
 volume - XF86AudioMute, XF86AudioLowerVolume, XF86AudioRaiseVolume
 .RE
 
+
+.TP
+.B \-\-custom\-key\-commands
+Enables custom shell commands for media, screen, power and volume keys. An alternative to \-\-pass\-media\0keys that will work in any environment.
+
+.TP
+.B \-\-*\-cmd
+Shell command to run when the corresponding key is pressed. Requires \-\-custom\-key\-commands
+.RS
+.IP \[bu] 2
+brightness\-up - XF86MonBrightnessUp
+.IP \[bu]
+brightness\-down - XF86MonBrightnessDown
+.IP \[bu]
+media\-play - XF86AudioPlay
+.IP \[bu]
+media\-pause - XF86AudioPause
+.IP \[bu]
+media\-stop - XF86AudioStop
+.IP \[bu]
+media\-next - XF86AudioNext
+.IP \[bu]
+media\-prev - XF86AudioPrev
+.IP \[bu]
+audio\-mute - XF86AudioMute
+.IP \[bu]
+volume\-up - XF86AudioRaiseVolume
+.IP \[bu]
+volume\-down - XF86AudioLowerVolume
+.IP \[bu]
+power\-down - XF86PowerDown
+.IP \[bu]
+power\-off - XF86PowerOff
+.IP \[bu]
+power\-sleep - XF86Sleep
+.RE
+
 .TP
 .B \-\-bar\-indicator
 Replaces the usual ring indicator with a bar indicator. Comes with perks.
