@@ -1661,23 +1661,23 @@ int main(int argc, char *argv[]) {
         {"pass-volume-keys", no_argument, NULL, 604},
 
         // custom commands for pass keys
-        {"custom-key-commands", no_argument, NULL, 609},
-        {"cmd-brightness-up", required_argument, NULL, 610},
-        {"cmd-brightness-down", required_argument, NULL, 611},
+        {"custom-key-commands", no_argument, NULL, 610},
+        {"cmd-brightness-up", required_argument, NULL, 620},
+        {"cmd-brightness-down", required_argument, NULL, 621},
 
-        {"cmd-media-play", required_argument, NULL, 620},
-        {"cmd-media-pause", required_argument, NULL, 621},
-        {"cmd-media-stop", required_argument, NULL, 622},
-        {"cmd-media-next", required_argument, NULL, 623},
-        {"cmd-media-prev", required_argument, NULL, 624},
+        {"cmd-media-play", required_argument, NULL, 630},
+        {"cmd-media-pause", required_argument, NULL, 631},
+        {"cmd-media-stop", required_argument, NULL, 632},
+        {"cmd-media-next", required_argument, NULL, 633},
+        {"cmd-media-prev", required_argument, NULL, 634},
 
-        {"cmd-audio-mute", required_argument, NULL, 630},
-        {"cmd-volume-up", required_argument, NULL, 631},
-        {"cmd-volume-down", required_argument, NULL, 632},
+        {"cmd-audio-mute", required_argument, NULL, 640},
+        {"cmd-volume-up", required_argument, NULL, 641},
+        {"cmd-volume-down", required_argument, NULL, 642},
 
-        {"cmd-power-down", required_argument, NULL, 640},
-        {"cmd-power-off", required_argument, NULL, 641},
-        {"cmd-power-sleep", required_argument, NULL, 642},
+        {"cmd-power-down", required_argument, NULL, 650},
+        {"cmd-power-off", required_argument, NULL, 651},
+        {"cmd-power-sleep", required_argument, NULL, 652},
 
         // bar indicator stuff
         {"bar-indicator", no_argument, NULL, 700},
@@ -2241,51 +2241,51 @@ int main(int argc, char *argv[]) {
 				break;
 
             //custom key commands
-            case 609:
+            case 610:
                 hotkeys = true;
-                break;            
-			case 610:
-				cmd_brightness_up = strdup(optarg);
-				break;
-			case 611:
-				cmd_brightness_down = strdup(optarg);
-				break;
+                break;
+            case 620:
+                cmd_brightness_up = strdup(optarg);
+                break;
+            case 621:
+                cmd_brightness_down = strdup(optarg);
+                break;
 
-			case 620:
-				cmd_media_play = strdup(optarg);
-				break;
-			case 621:
-				cmd_media_pause = strdup(optarg);
-				break;
-			case 622:
-				cmd_media_stop = strdup(optarg);
-				break;
-			case 623:
-				cmd_media_next = strdup(optarg);
-				break;
-			case 624:
-				cmd_media_prev = strdup(optarg);
-				break;
+            case 630:
+                cmd_media_play = strdup(optarg);
+                break;
+            case 631:
+                cmd_media_pause = strdup(optarg);
+                break;
+            case 632:
+                cmd_media_stop = strdup(optarg);
+                break;
+            case 633:
+                cmd_media_next = strdup(optarg);
+                break;
+            case 634:
+                cmd_media_prev = strdup(optarg);
+                break;
 
-			case 630:
-				cmd_audio_mute = strdup(optarg);
-				break;
-			case 631:
-				cmd_volume_up = strdup(optarg);
-				break;
-			case 632:
-				cmd_volume_down = strdup(optarg);
-				break;
+            case 640:
+                cmd_audio_mute = strdup(optarg);
+                break;
+            case 641:
+                cmd_volume_up = strdup(optarg);
+                break;
+            case 642:
+                cmd_volume_down = strdup(optarg);
+                break;
 
-			case 640:
-				cmd_power_down = strdup(optarg);
-				break;
-			case 641:
-				cmd_power_off = strdup(optarg);
-				break;
-			case 642:
-				cmd_power_sleep = strdup(optarg);
-				break;
+            case 650:
+                cmd_power_down = strdup(optarg);
+                break;
+            case 651:
+                cmd_power_off = strdup(optarg);
+                break;
+            case 652:
+                cmd_power_sleep = strdup(optarg);
+                break;
 
 			// Bar indicator
             case 700:
