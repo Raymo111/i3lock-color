@@ -247,6 +247,11 @@ extern char bar_width_expr[32];
 extern bool bar_bidirectional;
 extern bool bar_reversed;
 
+// Polygon indicator
+extern int polygon_sides;
+extern double polygon_offset;
+extern int polygon_highlight;
+
 static cairo_font_face_t *font_faces[6] = {
     NULL,
     NULL,
@@ -518,12 +523,31 @@ static void draw_bar(cairo_t *ctx, double bar_x, double bar_y, double bar_width,
     cairo_restore(ctx);
 }
 
+void draw_polygon(cairo_t *ctx, double center_x, double center_y, double radius, int points, int start, int end, double offset) {
+    int count = end - start;
+
+    for (int v = 0; v < count + 1; v++) {
+        double theta = (start + v)  * ((M_PI * 2) / points) + offset;
+
+        int x = radius * cos(theta);
+        int y = radius * sin(theta);
+
+        if (v == 0)
+            cairo_move_to(ctx, center_x + x, center_y + y);
+        else
+            cairo_line_to(ctx, center_x + x, center_y + y);
+    }
+}
+
 static void draw_indic(cairo_t *ctx, double ind_x, double ind_y) {
     if (unlock_indicator &&
         (unlock_state >= STATE_KEY_PRESSED || auth_state > STATE_AUTH_IDLE || show_indicator)) {
         /* Draw a (centered) circle with transparent background. */
         cairo_set_line_width(ctx, RING_WIDTH);
-        cairo_arc(ctx, ind_x, ind_y, BUTTON_RADIUS, 0, 2 * M_PI);
+        if (polygon_sides > 0)
+            draw_polygon(ctx, ind_x, ind_y, BUTTON_RADIUS, polygon_sides, 0, polygon_sides, polygon_offset);
+        else
+            cairo_arc(ctx, ind_x, ind_y, BUTTON_RADIUS, 0, 2 * M_PI);
 
         /* Use the appropriate color for the different PAM states
          * (currently verifying, wrong password, or default) */
@@ -593,15 +617,16 @@ static void draw_indic(cairo_t *ctx, double ind_x, double ind_y) {
         if (internal_line_source != 2) {  //pretty sure this only needs drawn if it's being drawn over the inside?
             cairo_set_source_rgba(ctx, line16.red, line16.green, line16.blue, line16.alpha);
             cairo_set_line_width(ctx, 2.0);
-            cairo_arc(ctx, ind_x, ind_y, BUTTON_RADIUS - 5, 0, 2 * M_PI);
+            if (polygon_sides > 0)
+                draw_polygon(ctx, ind_x, ind_y, BUTTON_RADIUS - 5, polygon_sides, 0, polygon_sides, polygon_offset);
+            else
+                cairo_arc(ctx, ind_x, ind_y, BUTTON_RADIUS - 5, 0, 2 * M_PI);
             cairo_stroke(ctx);
         }
         if (unlock_state == STATE_KEY_ACTIVE || unlock_state == STATE_BACKSPACE_ACTIVE) {
             cairo_set_line_width(ctx, RING_WIDTH);
             cairo_new_sub_path(ctx);
-            double highlight_start = (rand() % (int)(2 * M_PI * 100)) / 100.0;
-            cairo_arc(ctx, ind_x, ind_y, BUTTON_RADIUS,
-                      highlight_start, highlight_start + (M_PI / 3.0));
+
             if (unlock_state == STATE_KEY_ACTIVE) {
                 /* For normal keys, we use a lighter green. */
                 cairo_set_source_rgba(ctx, keyhl16.red, keyhl16.green, keyhl16.blue, keyhl16.alpha);
@@ -609,6 +634,23 @@ static void draw_indic(cairo_t *ctx, double ind_x, double ind_y) {
                 /* For backspace, we use red. */
                 cairo_set_source_rgba(ctx, bshl16.red, bshl16.green, bshl16.blue, bshl16.alpha);
             }
+
+            if (polygon_sides > 0) {
+                int highlight_start = 0;
+                if (polygon_highlight == 0)
+                    highlight_start = rand() % polygon_sides;
+                else if(polygon_highlight == 1)
+                    highlight_start = input_position % polygon_sides;
+                else if(polygon_highlight == 2)
+                    highlight_start = -input_position % polygon_sides;
+                draw_polygon(ctx, ind_x, ind_y, BUTTON_RADIUS, polygon_sides, highlight_start, highlight_start+1, polygon_offset);
+                cairo_stroke(ctx);
+                return;
+            }
+
+            double highlight_start = (rand() % (int)(2 * M_PI * 100)) / 100.0;
+            cairo_arc(ctx, ind_x, ind_y, BUTTON_RADIUS,
+                      highlight_start, highlight_start + (M_PI / 3.0));
 
             cairo_stroke(ctx);
 

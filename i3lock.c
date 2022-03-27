@@ -294,6 +294,11 @@ char bar_width_expr[32] = ""; // empty string means full width based on bar orie
 bool bar_bidirectional = false;
 bool bar_reversed = false;
 
+// Polygon indicator
+int polygon_sides = 0;
+double polygon_offset = 0;
+int polygon_highlight = 0;
+
 /* isutf, u8_dec © 2005 Jeff Bezanson, public domain */
 #define isutf(c) (((c)&0xC0) != 0x80)
 
@@ -1493,6 +1498,9 @@ int main(int argc, char *argv[]) {
         {"indicator", no_argument, NULL, 401},
         {"radius", required_argument, NULL, 402},
         {"ring-width", required_argument, NULL, 403},
+        {"polygon-sides", required_argument, NULL, 404},
+        {"polygon-offset", required_argument, NULL, 405},
+        {"polygon-highlight", required_argument, NULL, 406},
 
         // alignment
         {"time-align", required_argument, NULL, 500},
@@ -1809,6 +1817,30 @@ int main(int argc, char *argv[]) {
                 if (ring_width < 1.0) {
                     fprintf(stderr, "ring-width must be a positive float; ignoring...\n");
                     ring_width = 7.0;
+                }
+                break;
+            case 404:
+                arg = optarg;
+                if (sscanf(arg, "%d", &polygon_sides) != 1)
+                    errx(1, "polygon-sides must be a number\n");
+                if (polygon_sides < 3 && polygon_sides != 0) {
+                    fprintf(stderr, "polygon-sides must be greater then 2 or 0; ignoring...\n");
+                    polygon_sides = 0;
+                }
+                break;
+            case 405:
+                arg = optarg;
+                if (sscanf(arg, "%lf", &polygon_offset) != 1)
+                    errx(1, "polygon-offset must be a number\n");
+                polygon_offset = polygon_offset * (M_PI / 180);
+                break;
+            case 406:
+                arg = optarg;
+                if (sscanf(arg, "%d", &polygon_highlight) != 1)
+                    errx(1, "polygon-highlight must be a number\n");
+                if (polygon_highlight < 0 || polygon_highlight > 2) {
+                    fprintf(stderr, "polygon-highlight must be between 0 and 2; ignoring...\n");
+                    polygon_highlight = 0;
                 }
                 break;
 
