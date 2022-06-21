@@ -13,27 +13,17 @@
 /*
  * Checks if the file is a JPEG by looking for a valid JPEG header.
  */
-bool file_is_jpg(char* file_path) {
-    if (!file_path) return false;
-    FILE* image_file;
+bool file_is_jpg(FILE* image_file) {
     uint16_t file_header;
     size_t read_count;
     // TODO: Consider endianess on non-x86 platforms
     uint16_t jpg_magick = 0xd8ff;
 
-    image_file = fopen(file_path, "rb");
-    if (image_file == NULL) {
-        int img_err = errno;
-        fprintf(stderr, "Could not open image file %s: %s\n",
-                file_path, strerror(img_err));
-        return false;
-    }
-
+    fseek(image_file, 0, SEEK_SET);
     read_count = fread(&file_header, sizeof(file_header), 1, image_file);
-    fclose(image_file);
 
     if (read_count < 1) {
-        fprintf(stderr, "Error searching for JPEG header in %s\n", file_path);
+        fprintf(stderr, "Error searching for JPEG header\n");
         return false;
     }
 

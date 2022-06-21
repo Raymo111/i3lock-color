@@ -76,6 +76,7 @@ AC_SEARCH_LIBS([ev_run], [ev], , [AC_MSG_FAILURE([cannot find the required ev_ru
 
 AC_SEARCH_LIBS([shm_open], [rt])
 
+AC_SEARCH_LIBS([DGifOpenFileName], [gif])
 # Use system-local-login instead of login on Arch and Gentoo
 if [[ -f /etc/arch-release ]] || [[ -f /etc/gentoo-release ]]; then
     echo "Using PAM for Arch/Gentoo"
