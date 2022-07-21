@@ -81,7 +81,6 @@ _i3lock() {
     "--pass-screen-keys[Allow screen keys to be used while the screen is locked]"
     "--pass-power-keys[Allow power keys to be used while the screen is locked]"
     "--pass-volume-keys[Allow volume keys to be used while the screen is locked]"
-    "--special-passthrough[Force allowed key to be sent to wm/de]"
     # Bar mode
     "--bar-indicator[Replaces the usual ring indicator with a bar indicator]"
     "--bar-direction[Sets the direction the bars grow in]:direction:((0\:'default' 1\:'reverse' 2\:'both'))"
