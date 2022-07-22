@@ -1757,7 +1757,7 @@ int main(int argc, char *argv[]) {
                 unlock_indicator = false;
                 break;
             case 'i':
-                image_path = strdup(optarg);
+                image_path = optarg;
                 break;
             case 't':
                 if(bg_type != NONE) {
@@ -2245,46 +2245,46 @@ int main(int argc, char *argv[]) {
                 hotkeys = true;
                 break;
             case 620:
-                cmd_brightness_up = strdup(optarg);
+                cmd_brightness_up = optarg;
                 break;
             case 621:
-                cmd_brightness_down = strdup(optarg);
+                cmd_brightness_down = optarg;
                 break;
 
             case 630:
-                cmd_media_play = strdup(optarg);
+                cmd_media_play = optarg;
                 break;
             case 631:
-                cmd_media_pause = strdup(optarg);
+                cmd_media_pause = optarg;
                 break;
             case 632:
-                cmd_media_stop = strdup(optarg);
+                cmd_media_stop = optarg;
                 break;
             case 633:
-                cmd_media_next = strdup(optarg);
+                cmd_media_next = optarg;
                 break;
             case 634:
-                cmd_media_prev = strdup(optarg);
+                cmd_media_prev = optarg;
                 break;
 
             case 640:
-                cmd_audio_mute = strdup(optarg);
+                cmd_audio_mute = optarg;
                 break;
             case 641:
-                cmd_volume_up = strdup(optarg);
+                cmd_volume_up = optarg;
                 break;
             case 642:
-                cmd_volume_down = strdup(optarg);
+                cmd_volume_down = optarg;
                 break;
 
             case 650:
-                cmd_power_down = strdup(optarg);
+                cmd_power_down = optarg;
                 break;
             case 651:
-                cmd_power_off = strdup(optarg);
+                cmd_power_off = optarg;
                 break;
             case 652:
-                cmd_power_sleep = strdup(optarg);
+                cmd_power_sleep = optarg;
                 break;
 
 			// Bar indicator
@@ -2382,7 +2382,7 @@ int main(int argc, char *argv[]) {
                 no_verify = true;
                 break;
             case 998:
-                image_raw_format = strdup(optarg);
+                image_raw_format = optarg;
                 break;
             case 999:
                 debug_mode = true;
