@@ -249,7 +249,7 @@ extern bool bar_reversed;
 
 // Polygon indicator
 extern int polygon_sides;
-extern double polygon_offset;
+extern double polygon_rotation;
 extern int polygon_highlight;
 
 static cairo_font_face_t *font_faces[6] = {
@@ -523,11 +523,21 @@ static void draw_bar(cairo_t *ctx, double bar_x, double bar_y, double bar_width,
     cairo_restore(ctx);
 }
 
-void draw_polygon(cairo_t *ctx, double center_x, double center_y, double radius, int points, int start, int end, double offset) {
+/* Draw some number of edges of a polygon
+ * center_x/center_y: The center of the polygon
+ * radius: The distance from the center to the vertices
+ * points: The number of verticies
+ * start/end: The index of the edges to draw. Settings start to 0 and end to
+ *            points will draw the entire polygon. Edges are indexed counter
+ *            clockwise around the polygon.
+ * angle_offset: How far offset clockwise the first vertex is from the positive
+ *               x axis (radians).
+ */
+void draw_polygon(cairo_t *ctx, double center_x, double center_y, double radius, int points, int start, int end, double angle_offset) {
     int count = end - start;
 
     for (int v = 0; v < count + 1; v++) {
-        double theta = (start + v)  * ((M_PI * 2) / points) + offset;
+        double theta = (start + v)  * ((M_PI * 2) / points) + angle_offset;
 
         int x = radius * cos(theta);
         int y = radius * sin(theta);
@@ -545,7 +555,7 @@ static void draw_indic(cairo_t *ctx, double ind_x, double ind_y) {
         /* Draw a (centered) circle with transparent background. */
         cairo_set_line_width(ctx, RING_WIDTH);
         if (polygon_sides > 0)
-            draw_polygon(ctx, ind_x, ind_y, BUTTON_RADIUS, polygon_sides, 0, polygon_sides, polygon_offset);
+            draw_polygon(ctx, ind_x, ind_y, BUTTON_RADIUS, polygon_sides, 0, polygon_sides, polygon_rotation);
         else
             cairo_arc(ctx, ind_x, ind_y, BUTTON_RADIUS, 0, 2 * M_PI);
 
@@ -618,7 +628,7 @@ static void draw_indic(cairo_t *ctx, double ind_x, double ind_y) {
             cairo_set_source_rgba(ctx, line16.red, line16.green, line16.blue, line16.alpha);
             cairo_set_line_width(ctx, 2.0);
             if (polygon_sides > 0)
-                draw_polygon(ctx, ind_x, ind_y, BUTTON_RADIUS - 5, polygon_sides, 0, polygon_sides, polygon_offset);
+                draw_polygon(ctx, ind_x, ind_y, BUTTON_RADIUS - 5, polygon_sides, 0, polygon_sides, polygon_rotation);
             else
                 cairo_arc(ctx, ind_x, ind_y, BUTTON_RADIUS - 5, 0, 2 * M_PI);
             cairo_stroke(ctx);
@@ -643,7 +653,7 @@ static void draw_indic(cairo_t *ctx, double ind_x, double ind_y) {
                     highlight_start = input_position % polygon_sides;
                 else if(polygon_highlight == 2)
                     highlight_start = -input_position % polygon_sides;
-                draw_polygon(ctx, ind_x, ind_y, BUTTON_RADIUS, polygon_sides, highlight_start, highlight_start+1, polygon_offset);
+                draw_polygon(ctx, ind_x, ind_y, BUTTON_RADIUS, polygon_sides, highlight_start, highlight_start+1, polygon_rotation);
                 cairo_stroke(ctx);
                 return;
             }

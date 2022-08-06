@@ -296,7 +296,7 @@ bool bar_reversed = false;
 
 // Polygon indicator
 int polygon_sides = 0;
-double polygon_offset = 0;
+double polygon_rotation = 0;
 int polygon_highlight = 0;
 
 /* isutf, u8_dec © 2005 Jeff Bezanson, public domain */
@@ -1499,7 +1499,7 @@ int main(int argc, char *argv[]) {
         {"radius", required_argument, NULL, 402},
         {"ring-width", required_argument, NULL, 403},
         {"polygon-sides", required_argument, NULL, 404},
-        {"polygon-offset", required_argument, NULL, 405},
+        {"polygon-rotation", required_argument, NULL, 405},
         {"polygon-highlight", required_argument, NULL, 406},
 
         // alignment
@@ -1822,17 +1822,15 @@ int main(int argc, char *argv[]) {
             case 404:
                 arg = optarg;
                 if (sscanf(arg, "%d", &polygon_sides) != 1)
-                    errx(1, "polygon-sides must be a number\n");
-                if (polygon_sides < 3 && polygon_sides != 0) {
-                    fprintf(stderr, "polygon-sides must be greater then 2 or 0; ignoring...\n");
-                    polygon_sides = 0;
-                }
+                    errx(EXIT_FAILURE, "polygon-sides must be a number\n");
+                if (polygon_sides < 3)
+                    errx(EXIT_FAILURE, "polygon-sides must be greater then 2 or 0\n");
                 break;
             case 405:
                 arg = optarg;
-                if (sscanf(arg, "%lf", &polygon_offset) != 1)
-                    errx(1, "polygon-offset must be a number\n");
-                polygon_offset = polygon_offset * (M_PI / 180);
+                if (sscanf(arg, "%lf", &polygon_rotation) != 1)
+                    errx(1, "polygon-rotation must be a number\n");
+                polygon_rotation = polygon_rotation * (M_PI / 180);
                 break;
             case 406:
                 arg = optarg;
