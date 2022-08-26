@@ -1757,7 +1757,7 @@ int main(int argc, char *argv[]) {
                 unlock_indicator = false;
                 break;
             case 'i':
-                image_path = optarg;
+                image_path = strdup(optarg);
                 break;
             case 't':
                 if(bg_type != NONE) {
@@ -2382,7 +2382,7 @@ int main(int argc, char *argv[]) {
                 no_verify = true;
                 break;
             case 998:
-                image_raw_format = optarg;
+                image_raw_format = strdup(optarg);
                 break;
             case 999:
                 debug_mode = true;

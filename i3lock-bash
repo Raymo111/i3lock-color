@@ -23,7 +23,6 @@ _i3lock() {
   "--debug"
 
   # i3lock-color OPTIONS
-  
   "--screen -S"
   "--blur -B"
   "--clock --force-clocl -k"
@@ -82,20 +81,16 @@ _i3lock() {
   "--pass-power-keys"
   "--pass-volume-keys"
   "--custom-key-commands"
-
   "--cmd-brightness-up"
   "--cmd-brightness-down"
-
   "--cmd-media-play"
   "--cmd-media-pause"
   "--cmd-media-stop"
   "--cmd-media-next"
   "--cmd-media-prev"
-
   "--cmd-audio-mute"
   "--cmd-volume-up"
   "--cmd-volume-down"
-
   "--cmd-power-down"
   "--cmd-power-off"
   "--cmd-power-sleep"
