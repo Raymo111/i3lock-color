@@ -1241,16 +1241,16 @@ static cairo_surface_t *read_gif_image(const char *image_path) {
         switch (gc.DisposalMode) {
             case DISPOSE_DO_NOT:
                 if (data_prev) {
-                    memcpy(data, data_prev, width*height*sizeof(uint32_t));
+                    memcpy(data, data_prev, data_size);
                 } else {
-                    memset(data, 0, width*height*sizeof(uint32_t));
+                    memset(data, 0, data_size);
                 }
                 break;
             case DISPOSE_BACKGROUND:
-                memset(data, bg_color, width*height*sizeof(uint32_t));
+                memset(data, bg_color, data_size);
                 break;
             default:
-                memset(data, 0, width*height*sizeof(uint32_t));
+                memset(data, 0, data_size);
         }
 
         /* Read RGB */
