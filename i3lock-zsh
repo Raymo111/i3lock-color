@@ -93,6 +93,7 @@ _i3lock() {
     "--cmd-volume-up[Command for XF86AudioRaiseVolume]"
     "--cmd-volume-down[Command for XF86AudioLowerVolume]"
     "--cmd-power-down[Command for XF86PowerDown] "
+    "--cmd-mic-mute[Command for XF86AudioMicMute]"
     "--cmd-power-off[Command for XF86PowerOff]"
     "--cmd-power-sleep[Command for XF86Sleep]"
     # Bar mode
