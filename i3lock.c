@@ -816,6 +816,7 @@ static void handle_key_press(xcb_key_press_event_t *event) {
             case XKB_KEY_XF86AudioMute:
             case XKB_KEY_XF86AudioLowerVolume:
             case XKB_KEY_XF86AudioRaiseVolume:
+            case XKB_KEY_XF86AudioMicMute:
                 xcb_send_event(conn, true, screen->root, XCB_EVENT_MASK_BUTTON_PRESS, (char *)event);
                 return;
         }
