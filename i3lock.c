@@ -276,6 +276,7 @@ char* cmd_media_prev = NULL;
 char* cmd_audio_mute = NULL;
 char* cmd_volume_up = NULL;
 char* cmd_volume_down = NULL;
+char* cmd_mic_mute = NULL;
 
 char* cmd_power_down = NULL;
 char* cmd_power_off = NULL;
@@ -784,6 +785,12 @@ static void handle_key_press(xcb_key_press_event_t *event) {
                     return;
                 }
                 break;
+            case XKB_KEY_XF86AudioMicMute:
+                if (cmd_mic_mute) {
+                    system(cmd_mic_mute);
+                    return;
+                }
+                break;
             case XKB_KEY_XF86PowerDown:
                 if (cmd_power_down) {
                     system(cmd_power_down);
@@ -816,6 +823,7 @@ static void handle_key_press(xcb_key_press_event_t *event) {
             case XKB_KEY_XF86AudioMute:
             case XKB_KEY_XF86AudioLowerVolume:
             case XKB_KEY_XF86AudioRaiseVolume:
+            case XKB_KEY_XF86AudioMicMute:
                 xcb_send_event(conn, true, screen->root, XCB_EVENT_MASK_BUTTON_PRESS, (char *)event);
                 return;
         }
@@ -1674,6 +1682,7 @@ int main(int argc, char *argv[]) {
         {"cmd-audio-mute", required_argument, NULL, 640},
         {"cmd-volume-up", required_argument, NULL, 641},
         {"cmd-volume-down", required_argument, NULL, 642},
+        {"cmd-mic-mute", required_argument, NULL, 643},
 
         {"cmd-power-down", required_argument, NULL, 650},
         {"cmd-power-off", required_argument, NULL, 651},
@@ -2275,6 +2284,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 642:
                 cmd_volume_down = optarg;
+                break;
+            case 643:
+                cmd_mic_mute = optarg;
                 break;
 
             case 650:

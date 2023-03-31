@@ -91,6 +91,7 @@ _i3lock() {
   "--cmd-audio-mute"
   "--cmd-volume-up"
   "--cmd-volume-down"
+  "--cmd-mic-mute"
   "--cmd-power-down"
   "--cmd-power-off"
   "--cmd-power-sleep"
