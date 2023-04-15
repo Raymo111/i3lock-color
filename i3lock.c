@@ -2533,20 +2533,10 @@ int main(int argc, char *argv[]) {
 
     free(image_raw_format);
 
+    xcb_pixmap_t bg_pixmap = bg_pixmap;  // Initialized only `if (blur)`
     if (blur) {
-        xcb_pixmap_t bg_pixmap = capture_bg_pixmap(conn, screen, last_resolution);
-        cairo_surface_t *xcb_img = cairo_xcb_surface_create(conn, bg_pixmap, get_root_visual_type(screen), last_resolution[0], last_resolution[1]);
-
-        blur_bg_img = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, last_resolution[0], last_resolution[1]);
-        cairo_t *ctx = cairo_create(blur_bg_img);
-
-        cairo_set_source_surface(ctx, xcb_img, 0, 0);
-        cairo_paint(ctx);
-        blur_image_surface(blur_bg_img, blur_sigma);
-
-        cairo_destroy(ctx);
-        cairo_surface_destroy(xcb_img);
-        xcb_free_pixmap(conn, bg_pixmap);
+        // Make the screenshot before opening the window, blur it later
+        bg_pixmap = capture_bg_pixmap(conn, screen, last_resolution);
     }
 
     xcb_window_t stolen_focus = find_focused_window(conn, screen->root);
@@ -2579,6 +2569,23 @@ int main(int argc, char *argv[]) {
             sleep(1);
             errx(EXIT_FAILURE, "Cannot grab pointer/keyboard");
         }
+    }
+
+    if (blur) {
+        // Blurring the earlier taken screenshot (`bg_pixmap`)
+
+        cairo_surface_t *xcb_img = cairo_xcb_surface_create(conn, bg_pixmap, get_root_visual_type(screen), last_resolution[0], last_resolution[1]);
+
+        blur_bg_img = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, last_resolution[0], last_resolution[1]);
+        cairo_t *ctx = cairo_create(blur_bg_img);
+
+        cairo_set_source_surface(ctx, xcb_img, 0, 0);
+        cairo_paint(ctx);
+        blur_image_surface(blur_bg_img, blur_sigma);
+
+        cairo_destroy(ctx);
+        cairo_surface_destroy(xcb_img);
+        xcb_free_pixmap(conn, bg_pixmap);
     }
 
     pid_t pid = fork();
