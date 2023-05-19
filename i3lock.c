@@ -110,6 +110,7 @@ int internal_line_source = 0;
 float refresh_rate = 1.0;
 
 bool show_clock = false;
+bool update_greeter = false;
 bool slideshow_enabled = false;
 bool always_show_clock = false;
 bool show_indicator = false;
@@ -198,6 +199,7 @@ char* lock_failed_text = "lock failed!";
 int   keylayout_mode = -1;
 char* layout_text = NULL;
 char* greeter_text = "";
+char* greeter_cmd = "";
 
 /* opts for blurring */
 bool blur = false;
@@ -1603,6 +1605,7 @@ int main(int argc, char *argv[]) {
         {"indicator", no_argument, NULL, 401},
         {"radius", required_argument, NULL, 402},
         {"ring-width", required_argument, NULL, 403},
+        {"greeter-cmd", required_argument, NULL, 404},
 
         // alignment
         {"time-align", required_argument, NULL, 500},
@@ -1941,6 +1944,10 @@ int main(int argc, char *argv[]) {
                     ring_width = 7.0;
                 }
                 break;
+            case 404:
+                update_greeter = true;
+                greeter_cmd = optarg;
+                break;
 
 			// Alignment stuff
             case 500:
@@ -2014,6 +2021,9 @@ int main(int argc, char *argv[]) {
                 lock_failed_text = optarg;
                 break;
             case 518:
+                if (greeter_cmd) {
+                    errx(EXIT_FAILURE, "i3lock-color: Options greeter-text and greeter-cmd conflict.");
+                }
                 greeter_text = optarg;
                 break;
             case 519:
@@ -2626,7 +2636,7 @@ int main(int argc, char *argv[]) {
      * file descriptor becomes readable). */
     ev_invoke(main_loop, xcb_check, 0);
 
-    if (show_clock || bar_enabled || slideshow_enabled) {
+    if (show_clock || bar_enabled || slideshow_enabled || update_greeter) {
         if (redraw_thread) {
             struct timespec ts;
             double s;
@@ -2658,4 +2668,20 @@ int main(int argc, char *argv[]) {
     xcb_aux_sync(conn);
 
     return 0;
+}
+
+void update_greeter_text() {
+    FILE *fp;
+    static char file_text[128];
+
+    memset(file_text,0,sizeof(file_text));
+
+    DEBUG("greeter_cmd is: [%s]\n", greeter_cmd);
+    if((fp = popen(greeter_cmd, "r")) == NULL)
+        return;
+
+    fread(file_text, sizeof(char), sizeof(file_text), fp);
+    pclose(fp);
+
+    greeter_text = file_text;
 }
