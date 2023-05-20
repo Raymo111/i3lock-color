@@ -232,6 +232,10 @@ int failed_attempts = 0;
 bool show_failed_attempts = false;
 bool retry_verification = false;
 
+/* Set to true by `input_done` when the password is correct.
+ * Needed if user has entered password before intialization completed. */
+bool unlocked = false;
+
 static struct xkb_state *xkb_state;
 static struct xkb_context *xkb_context;
 static struct xkb_keymap *xkb_keymap;
@@ -564,6 +568,7 @@ static void input_done(void) {
 
     if (no_verify) {
         ev_break(EV_DEFAULT, EVBREAK_ALL);
+        unlocked = true;
         return;
     }
 
@@ -578,6 +583,7 @@ static void input_done(void) {
         clear_password_memory();
 
         ev_break(EV_DEFAULT, EVBREAK_ALL);
+        unlocked = true;
         return;
     }
 #else
@@ -593,6 +599,7 @@ static void input_done(void) {
         pam_cleanup = true;
 
         ev_break(EV_DEFAULT, EVBREAK_ALL);
+        unlocked = true;
         return;
     }
 #endif
@@ -2633,19 +2640,24 @@ int main(int argc, char *argv[]) {
      * file descriptor becomes readable). */
     ev_invoke(main_loop, xcb_check, 0);
 
-    if (show_clock || bar_enabled || slideshow_enabled) {
-        if (redraw_thread) {
-            struct timespec ts;
-            double s;
-            double ns = modf(refresh_rate, &s);
-            ts.tv_sec = (time_t) s;
-            ts.tv_nsec = ns * NANOSECONDS_IN_SECOND;
-            (void) pthread_create(&draw_thread, NULL, start_time_redraw_tick_pthread, (void*) &ts);
-        } else {
-            start_time_redraw_tick(main_loop);
+    /* If the user was fast enough to have typed their password (and pressed Enter) before
+     * i3lock has finished intializing, all of that is processed in the above `ev_invoke`.
+     * If the password was correct (`unlocked` is true), we should not enter the event loop. */
+    if (!unlocked) {
+        if (show_clock || bar_enabled || slideshow_enabled) {
+            if (redraw_thread) {
+                struct timespec ts;
+                double s;
+                double ns = modf(refresh_rate, &s);
+                ts.tv_sec = (time_t) s;
+                ts.tv_nsec = ns * NANOSECONDS_IN_SECOND;
+                (void) pthread_create(&draw_thread, NULL, start_time_redraw_tick_pthread, (void*) &ts);
+            } else {
+                start_time_redraw_tick(main_loop);
+            }
         }
+        ev_loop(main_loop, 0);
     }
-    ev_loop(main_loop, 0);
 
 #ifndef __OpenBSD__
     if (pam_cleanup) {
