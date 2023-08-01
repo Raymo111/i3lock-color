@@ -8,6 +8,7 @@
  * See LICENSE for licensing information
  *
  */
+#define _GNU_SOURCE
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -15,6 +16,7 @@
 #include <math.h>
 #include <xcb/xcb.h>
 #include <xcb/randr.h>
+#include <xkbcommon/xkbcommon.h>/
 #include <ev.h>
 #include <cairo.h>
 #include <cairo/cairo-xcb.h>
@@ -172,6 +174,9 @@ extern bool show_failed_attempts;
 /* Number of failed unlock attempts. */
 extern int failed_attempts;
 
+extern struct xkb_keymap *xkb_keymap;
+extern struct xkb_state *xkb_state;
+
 /*******************************************************************************
  * Variables defined in xcb.c.
  ******************************************************************************/
@@ -263,6 +268,43 @@ static control_char_config_t control_characters[] = {
     {'\t', CC_POS_TAB, 4, CC_POS_KEEP, 0},
 };
 size_t control_char_count = sizeof control_characters / sizeof(control_char_config_t);
+
+/* check_modifier_keys describes the currently active modifiers (Caps Lock, Alt,
+   Num Lock or Super) in the modifier_string variable. */
+static void check_modifier_keys(void) {
+    xkb_mod_index_t idx, num_mods;
+    const char *mod_name;
+
+    num_mods = xkb_keymap_num_mods(xkb_keymap);
+
+    for (idx = 0; idx < num_mods; idx++) {
+        if (!xkb_state_mod_index_is_active(xkb_state, idx, XKB_STATE_MODS_EFFECTIVE))
+            continue;
+
+        mod_name = xkb_keymap_mod_get_name(xkb_keymap, idx);
+        if (mod_name == NULL)
+            continue;
+
+        /* Replace certain xkb names with nicer, human-readable ones. */
+        if (strcmp(mod_name, XKB_MOD_NAME_CAPS) == 0)
+            mod_name = "Caps Lock";
+        else if (strcmp(mod_name, XKB_MOD_NAME_ALT) == 0)
+            mod_name = "Alt";
+        else if (strcmp(mod_name, XKB_MOD_NAME_NUM) == 0)
+            mod_name = "Num Lock";
+        else if (strcmp(mod_name, XKB_MOD_NAME_LOGO) == 0)
+            mod_name = "Super";
+
+        char *tmp;
+        if (modifier_string == NULL) {
+            if (asprintf(&tmp, "%s", mod_name) != -1)
+                modifier_string = tmp;
+        } else if (asprintf(&tmp, "%s, %s", modifier_string, mod_name) != -1) {
+            free(modifier_string);
+            modifier_string = tmp;
+        }
+    }
+}
 
 static cairo_font_face_t *get_font_face(int which) {
     if (font_faces[which]) {
@@ -1271,6 +1313,12 @@ void draw_image(uint32_t* root_resolution, cairo_surface_t *img, cairo_t* xcb_ct
  */
 void redraw_screen(void) {
     DEBUG("redraw_screen(unlock_state = %d, auth_state = %d) @ [%lu]\n", unlock_state, auth_state, (unsigned long)time(NULL));
+    if (modifier_string) {
+        free(modifier_string);
+        modifier_string = NULL;
+    }
+    check_modifier_keys();
+
     xcb_pixmap_t pixmap = create_bg_pixmap(conn, win, last_resolution, color);
     render_lock(last_resolution, pixmap);
     xcb_change_window_attributes(conn, win, XCB_CW_BACK_PIXMAP, (uint32_t[1]){pixmap});
@@ -1317,3 +1365,4 @@ void start_time_redraw_tick(struct ev_loop *main_loop) {
         ev_periodic_start(main_loop, time_redraw_tick);
     }
 }
+

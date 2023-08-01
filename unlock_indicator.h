@@ -47,7 +47,6 @@ typedef enum {
     MAX,
 } background_type_t;
 
-
 typedef enum {
     CC_POS_RESET,
     CC_POS_CHANGE,
