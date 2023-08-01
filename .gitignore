@@ -6,8 +6,30 @@ tags
 *~
 x86_64-pc-linux-gnu
 
-# We recommend building in a subdirectory called build.
-# If you chose a different directory name,
-# it is up to you to arrange for it to be ignored by git,
-# e.g. by listing your directory in .git/info/exclude.
-/build
+################################################################################
+# https://raw.githubusercontent.com/github/gitignore/master/Autotools.gitignore
+################################################################################
+
+# http://www.gnu.org/software/automake
+
+Makefile.in
+/ar-lib
+/test-driver
+
+# http://www.gnu.org/software/autoconf
+
+/autom4te.cache
+/autoscan.log
+/autoscan-*.log
+/aclocal.m4
+/compile
+/config.h.in
+/config.guess
+/config.sub
+/configure
+/configure.scan
+/depcomp
+/install-sh
+/missing
+/stamp-h1
+aminclude_static.am
