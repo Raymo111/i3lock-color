@@ -158,7 +158,7 @@ A FreeBSD port is available on freshports: [x11/i3lock-color/](https://www.fresh
 ## Running i3lock-color
 Simply invoke the 'i3lock' command. To get out of it, enter your password and press enter.
 
-A [sample script](examples/lock.sh) is included in this repository. [See the script in action](https://streamable.com/fpl46)
+A [sample script](examples/lock.sh) is included in this repository.
 
 On OpenBSD the `i3lock` binary needs to be setgid `auth` to call the authentication helpers, e.g. `/usr/libexec/auth/login_passwd`.
 
