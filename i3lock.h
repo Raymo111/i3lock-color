@@ -15,4 +15,6 @@
          }                                                          \
     } while (0)
 
+void update_greeter_text();
+
 #endif

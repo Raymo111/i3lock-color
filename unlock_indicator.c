@@ -109,6 +109,7 @@ extern int screen_number;
 extern float refresh_rate;
 
 extern bool show_clock;
+extern bool update_greeter;
 extern bool always_show_clock;
 extern bool show_indicator;
 extern int verif_align;
@@ -920,6 +921,9 @@ void render_lock(uint32_t *resolution, xcb_drawable_t drawable) {
     }
 
     if (greeter_text) {
+        if(update_greeter) {
+            update_greeter_text();
+        }
         draw_data.greeter_text.show = true;
         strncpy(draw_data.greeter_text.str, greeter_text, sizeof(draw_data.greeter_text.str) - 1);
         draw_data.greeter_text.size = greeter_size;
