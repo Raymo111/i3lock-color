@@ -107,6 +107,10 @@ _i3lock() {
   "--bar-pos"
   "--bar-count"
   "--bar-total-width"
+  # Polygon indicator
+  "--polygon-sides"
+  "--polygon-offset"
+  "--polygon-highlight"
   # Extra configs
   "--redraw-thread"
   "--refresh-rate"

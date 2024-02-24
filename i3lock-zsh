@@ -108,6 +108,10 @@ _i3lock() {
     "--bar-pos[Sets the bar position]:pos:->bar_pos"
     "--bar-count[Sets the number of minibars to draw on each screen]:int:"
     "--bar-total-width[The total width of the bar]:float:"
+    # Polygon indicator
+    "--polygon-sides[Draws the indicator as a regular polygon]:int:"
+    "--polygon-rotation[Rotates the indicator polygon]:float:"
+    "--polygon-highlight[Sets the polygon highlight mode]:mode:((0\:'random' 1\:'clockwise' 2\:'counterclockwise'))"
     # Extra configs
     "--redraw-thread[Starts a separate thread for redrawing the screen]"
     "--refresh-rate[The refresh rate of the indicator]:double:"

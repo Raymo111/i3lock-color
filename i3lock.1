@@ -485,6 +485,20 @@ Sets the number of minibars to draw on each screen.
 The total width of the bar. Can be an expression.
 
 .TP
+.B \-\-polygon\-sides
+Draw the indicator as a regular polygon instead of a circle.
+
+.TP
+.B \-\-polygon\-rotation=degrees\-as\-double
+The angle to rotate the indicator polygon by.
+
+.TP
+.B \-\-polygon\-highlight={0, 1, 2}
+Sets the highlight mode when drawing the indicator as a polygon. 0 highlights a
+random edge on each keypress, 1 highlights consecutive edges clockwise, 2 highlights
+counterclockwise. Highlights reverse direction while backspacing.
+
+.TP
 .B \-\-redraw\-thread
 Starts a separate thread for redrawing the screen. Potentially worse from a
 security standpoint, but makes the bar indicator still do its usual periodic
