@@ -1,0 +1,4 @@
+# -*- mode: meson -*-
+option('man-pages', type: 'boolean', value: true, description: 'Install man pages.')
+option('zsh-completions', type: 'boolean', value: true, description: 'Install zsh shell completions.')
+option('bash-completions', type: 'boolean', value: true, description: 'Install bash shell completions.')
