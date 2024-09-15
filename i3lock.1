@@ -8,7 +8,7 @@
 .fi
 ..
 
-.TH i3lock-color 1 "JAN 2022" Linux "User Manuals"
+.TH i3lock-color 1 "SEP 2022" Linux "User Manuals"
 
 .SH NAME
 i3lock-color \- improved screen locker
@@ -42,8 +42,8 @@ i3lock forks, so you can combine it with an alias to suspend to RAM
 (run "i3lock && echo mem > /sys/power/state" to get a locked screen after waking
 up your computer from suspend to RAM)
 .IP \[bu]
-You can specify either a background color or a PNG image which will be displayed
-while your screen is locked.
+You can specify either a PNG or JPG image, a GIF animation or a background
+color which will be displayed while your screen is locked.
 .IP \[bu]
 You can specify whether i3lock should bell upon a wrong password.
 .IP \[bu]
@@ -73,12 +73,12 @@ verified or whether it is wrong).
 
 .TP
 .BI \-i\  path \fR,\ \fB\-\-image= path
-Display the given PNG image instead of a blank screen.
+Display the given PNG/JPG image or GIF animation instead of a blank screen.
 
 .TP
 .BI \fB\-\-raw= format
-Read the image given by \-\-image as a raw image instead of PNG. The argument is
-the image's format as <width>x<height>:<pixfmt>.
+Read the image given by \-\-image as a raw image instead of PNG/JPG/GIF. The
+argument is the image's format as <width>x<height>:<pixfmt>.
 The supported pixel formats are:
 \'native', 'rgb', 'xrgb', 'rgbx', 'bgr', 'xbgr', and 'bgrx'.
 The "native" pixel format expects a pixel as a 32-bit (4-byte) integer in

@@ -13,7 +13,7 @@ typedef struct {
 /*
  * Checks if the file is a JPEG by looking for a valid JPEG header.
  */
-bool file_is_jpg(char* file_path);
+bool file_is_jpg(FILE* image_file);
 
 /*
  * Reads a JPEG from a file into memory, in a format that Cairo can create a

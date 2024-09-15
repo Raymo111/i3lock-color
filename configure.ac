@@ -76,6 +76,7 @@ AC_SEARCH_LIBS([ev_run], [ev], , [AC_MSG_FAILURE([cannot find the required ev_ru
 
 AC_SEARCH_LIBS([shm_open], [rt])
 
+AC_SEARCH_LIBS([DGifOpenFileName], [gif])
 # Use system-local-login instead of login on Arch and Gentoo
 if [[ -f /etc/arch-release ]] || [[ -f /etc/gentoo-release ]]; then
     echo "Using PAM for Arch/Gentoo"
@@ -128,7 +129,7 @@ AX_CHECK_BASH_COMPLETION
 AX_CHECK_ZSH_COMPLETION
 
 # Checks for header files.
-AC_CHECK_HEADERS([fcntl.h float.h inttypes.h limits.h locale.h netinet/in.h paths.h stddef.h stdint.h stdlib.h string.h sys/param.h sys/socket.h sys/time.h unistd.h], , [AC_MSG_FAILURE([cannot find the $ac_header header, which i3lock requires])])
+AC_CHECK_HEADERS([fcntl.h float.h inttypes.h limits.h locale.h netinet/in.h paths.h stddef.h stdint.h stdlib.h string.h sys/param.h sys/socket.h sys/time.h unistd.h gif_lib.h], , [AC_MSG_FAILURE([cannot find the $ac_header header, which i3lock requires])])
 
 AC_CONFIG_FILES([Makefile])
 
