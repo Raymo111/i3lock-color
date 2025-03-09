@@ -1220,7 +1220,7 @@ static cairo_surface_t *read_gif_image(const char *image_path) {
                 case GRAPHICS_EXT_FUNC_CODE:
                     DGifExtensionToGCB(pext->ByteCount, pext->Bytes, &gc);
                     // Delay time is in [ms]. Scale it to seconds.
-                    gif_img[idx].delay_sec = gc.DelayTime*0.01;
+                    gif_img[idx].delay_sec = gc.DelayTime * 0.01;
                     break;
                 default:
                     gif_img[idx].delay_sec = 0;
