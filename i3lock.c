@@ -2868,6 +2868,7 @@ int main(int argc, char *argv[]) {
     xcb_ungrab_keyboard(conn, XCB_CURRENT_TIME);
     xcb_destroy_window(conn, win);
     set_focused_window(conn, screen->root, stolen_focus);
+    xcb_set_input_focus(conn, XCB_INPUT_FOCUS_PARENT /* revert_to */, stolen_focus, XCB_CURRENT_TIME);
     xcb_aux_sync(conn);
 
     return 0;
