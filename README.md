@@ -128,6 +128,13 @@ You may choose to modify the script based on your needs/OS/distro.
 ## Alpine Linux Packages
 Alpine packages i3lock-color for a variety of architectures. A full list can be found on [pkgs.alpinelinux.org](https://pkgs.alpinelinux.org/packages?name=i3lock-color&branch=edge).
 
+## Debian Packages
+i3lock-color is available from the [pkg.haus](https://pkg.haus) APT archive for Debian stable, testing and unstable on amd64 and arm64. Set up the archive per the instructions on [pkg.haus](https://pkg.haus), then run:
+
+```
+sudo apt install i3lock-color
+```
+
 ## Arch Linux Packages
 ~~[Stable version in Community](https://www.archlinux.org/packages/community/x86_64/i3lock-color/)~~
 
