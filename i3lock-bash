@@ -83,6 +83,7 @@ _i3lock() {
   "--custom-key-commands"
   "--cmd-brightness-up"
   "--cmd-brightness-down"
+  "--cmd-display"
   "--cmd-media-play"
   "--cmd-media-pause"
   "--cmd-media-stop"

@@ -84,6 +84,7 @@ _i3lock() {
     "--custom-key-commands[Enable shell commands for media keys]"
     "--cmd-brightness-up[Command for XF86MonBrightnessUp]"
     "--cmd-brightness-down[Command for XF86MonBrightnessDown]"
+    "--cmd-display[Command for XF86Display]"
     "--cmd-media-play[Command for XF86AudioPlay]"
     "--cmd-media-pause[Command for XF86AudioPause]"
     "--cmd-media-stop[Command for XF86AudioStop]"

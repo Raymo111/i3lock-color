@@ -274,6 +274,7 @@ bool pass_power_keys = false;
 bool pass_volume_keys = false;
 
 bool hotkeys = false;
+char* cmd_display = NULL;
 char* cmd_brightness_up = NULL;
 char* cmd_brightness_down = NULL;
 
@@ -761,6 +762,12 @@ static void handle_key_press(xcb_key_press_event_t *event) {
                     return;
                 }
                 break;
+            case XKB_KEY_XF86Display:
+                if (cmd_display) {
+                    system(cmd_display);
+                    return;
+                }
+                break;
             case XKB_KEY_XF86AudioPlay:
                 if (cmd_media_play) {
                     system(cmd_media_play);
@@ -858,6 +865,7 @@ static void handle_key_press(xcb_key_press_event_t *event) {
         switch(ksym) {
             case XKB_KEY_XF86MonBrightnessUp:
             case XKB_KEY_XF86MonBrightnessDown:
+            case XKB_KEY_XF86Display:
                 xcb_send_event(conn, true, screen->root, XCB_EVENT_MASK_BUTTON_PRESS, (char *)event);
                 return;
         }
@@ -1885,6 +1893,7 @@ int main(int argc, char *argv[]) {
         {"custom-key-commands", no_argument, NULL, 610},
         {"cmd-brightness-up", required_argument, NULL, 620},
         {"cmd-brightness-down", required_argument, NULL, 621},
+        {"cmd-display", required_argument, NULL, 622},
 
         {"cmd-media-play", required_argument, NULL, 630},
         {"cmd-media-pause", required_argument, NULL, 631},
@@ -2473,6 +2482,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 621:
                 cmd_brightness_down = optarg;
+                break;
+            case 622:
+                cmd_display = optarg;
                 break;
 
             case 630:
