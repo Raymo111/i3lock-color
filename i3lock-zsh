@@ -76,6 +76,11 @@ _i3lock() {
     "--time-pos[Sets the position for the time string]:pos:->time_pos"
     "--date-pos[Sets the position for the date string]:pos:->date_pos"
     "--greeter-pos[Sets the position for the greeter string]:pos:->greeter_pos"
+    "--verif-pos[Sets the position for the verification text]:pos:->text_pos"
+    "--wrong-pos[Sets the position for the wrong password text]:pos:->text_pos"
+    "--status-pos[Sets the position for the no input text and failed attempts counter]:pos:->text_pos"
+    "--layout-pos[Sets the position for the keyboard layout text]:pos:->text_pos"
+    "--modif-pos[Sets the position for the keyboard modifiers text]:pos:->text_pos"
     # Media keys
     "--pass-media-keys[Allow media keys to be used while the screen is locked]"
     "--pass-screen-keys[Allow screen keys to be used while the screen is locked]"
@@ -165,6 +170,13 @@ _i3lock() {
 
       _message "\"x position:y position\""
       _message -e "normal" "All the variables from --ind-pos and --time-pos may be used"
+      ;;
+    text_pos)
+      zstyle ':completion:::i3lock::normal' format '%d'
+      zstyle ':completion:::i3lock::descriptions' format '%B%d%b'
+
+      _message ""x position:y position""
+      _message -e "normal" "All the variables from --ind-pos, --time-pos and --date-pos may be used"
       ;;
     bar_pos)
       zstyle ':completion:*:*:i3lock:*:normal' format '%d'

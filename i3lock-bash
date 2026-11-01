@@ -75,6 +75,11 @@ _i3lock() {
   "--time-pos"
   "--date-pos"
   "--greeter-pos"
+  "--verif-pos"
+  "--wrong-pos"
+  "--status-pos"
+  "--layout-pos"
+  "--modif-pos"
   # Media keys
   "--pass-media-keys"
   "--pass-screen-keys"
