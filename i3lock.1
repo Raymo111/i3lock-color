@@ -377,6 +377,37 @@ Sets the position for the greeter string. All the variables from \-\-ind\-pos an
 \-\-time\-pos may be used.
 
 .TP
+.B --verif-pos="x-position:y-position"
+Sets the position for the verification text (--verif-text and --lock-text).
+All the variables from --ind-pos, --time-pos and --date-pos may be used.
+Defaults to "ix:iy".
+
+.TP
+.B --wrong-pos="x-position:y-position"
+Sets the position for the wrong password text (--wrong-text and --lockfailed-text).
+All the variables from --ind-pos, --time-pos and --date-pos may be used.
+Defaults to "ix:iy".
+
+.TP
+.B --status-pos="x-position:y-position"
+Sets the position for the status text shown outside of verification and wrong
+password states: the --noinput-text and the failed attempts counter
+(--show-failed-attempts). All the variables from --ind-pos, --time-pos
+and --date-pos may be used. Defaults to "ix:iy".
+
+.TP
+.B --layout-pos="x-position:y-position"
+Sets the position for the keyboard layout text (--keylayout).
+All the variables from --ind-pos, --time-pos and --date-pos may be used.
+Defaults to "dx:dy+30".
+
+.TP
+.B --modif-pos="x-position:y-position"
+Sets the position for the keyboard modifiers text (e.g. Caps Lock).
+All the variables from --ind-pos, --time-pos and --date-pos may be used.
+Defaults to "ix:iy+28".
+
+.TP
 .B \-\-pass\-{media, screen, power, volume}\-keys
 Allow the following keys to be used normally while the screen is locked by
 passing them through:
